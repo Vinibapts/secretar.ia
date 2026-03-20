@@ -1,0 +1,4 @@
+# Dependências para o Sistema de Agentes
+httpx>=0.25.0
+python-dotenv>=1.0.0
+asyncio-compat>=0.1.1
