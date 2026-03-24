@@ -45,12 +45,7 @@ export default function FinancesScreen() {
     }
     setSaving(true);
     try {
-      await createFinance({
-        valor: parseFloat(valor),
-        tipo,
-        categoria,
-        descricao,
-      });
+      await createFinance({ valor: parseFloat(valor), tipo, categoria, descricao });
       setModalVisible(false);
       setValor('');
       setTipo('gasto');
@@ -83,14 +78,17 @@ export default function FinancesScreen() {
     });
   };
 
-  const categoryIcons = {
-    alimentacao: 'restaurant-outline',
-    transporte: 'car-outline',
-    moradia: 'home-outline',
-    saude: 'medical-outline',
-    lazer: 'game-controller-outline',
-    salario: 'cash-outline',
-    freelance: 'laptop-outline',
+  const getCategoryIcon = (categoria) => {
+    const icons = {
+      alimentacao: 'restaurant-outline',
+      transporte: 'car-outline',
+      moradia: 'home-outline',
+      saude: 'medical-outline',
+      lazer: 'game-controller-outline',
+      salario: 'cash-outline',
+      freelance: 'laptop-outline',
+    };
+    return icons[categoria?.toLowerCase()] || 'ellipse-outline';
   };
 
   return (
@@ -115,15 +113,19 @@ export default function FinancesScreen() {
 
           {/* Resumo cards */}
           <View style={styles.summaryRow}>
-            <View style={[styles.summaryCard, styles.summaryReceita]}>
-              <Ionicons name="trending-up" size={20} color={Colors.success} />
+            <View style={[styles.summaryCard, { borderTopColor: Colors.success }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: Colors.successLight }]}>
+                <Ionicons name="trending-up" size={20} color={Colors.success} />
+              </View>
               <Text style={styles.summaryLabel}>Receitas</Text>
               <Text style={[styles.summaryValue, { color: Colors.success }]}>
                 R$ {resumo.total_receitas.toFixed(2)}
               </Text>
             </View>
-            <View style={[styles.summaryCard, styles.summaryGasto]}>
-              <Ionicons name="trending-down" size={20} color={Colors.danger} />
+            <View style={[styles.summaryCard, { borderTopColor: Colors.danger }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: Colors.dangerLight }]}>
+                <Ionicons name="trending-down" size={20} color={Colors.danger} />
+              </View>
               <Text style={styles.summaryLabel}>Despesas</Text>
               <Text style={[styles.summaryValue, { color: Colors.danger }]}>
                 R$ {resumo.total_gastos.toFixed(2)}
@@ -131,15 +133,25 @@ export default function FinancesScreen() {
             </View>
           </View>
 
-          <View style={[styles.saldoCard, {
-            borderColor: resumo.saldo >= 0 ? Colors.success : Colors.danger
-          }]}>
-            <Text style={styles.saldoLabel}>Saldo atual</Text>
-            <Text style={[styles.saldoValue, {
-              color: resumo.saldo >= 0 ? Colors.success : Colors.danger
+          {/* Saldo */}
+          <View style={styles.saldoCard}>
+            <View>
+              <Text style={styles.saldoLabel}>Saldo atual</Text>
+              <Text style={[styles.saldoValue, {
+                color: resumo.saldo >= 0 ? Colors.success : Colors.danger
+              }]}>
+                R$ {resumo.saldo.toFixed(2)}
+              </Text>
+            </View>
+            <View style={[styles.saldoIcon, {
+              backgroundColor: resumo.saldo >= 0 ? Colors.successLight : Colors.dangerLight
             }]}>
-              R$ {resumo.saldo.toFixed(2)}
-            </Text>
+              <Ionicons
+                name={resumo.saldo >= 0 ? 'trending-up' : 'trending-down'}
+                size={24}
+                color={resumo.saldo >= 0 ? Colors.success : Colors.danger}
+              />
+            </View>
           </View>
 
           {/* Transações */}
@@ -147,18 +159,20 @@ export default function FinancesScreen() {
 
           {finances.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="wallet-outline" size={64} color={Colors.textMuted} />
+              <View style={styles.emptyIcon}>
+                <Ionicons name="wallet-outline" size={40} color={Colors.warning} />
+              </View>
               <Text style={styles.emptyTitle}>Nenhuma transação</Text>
-              <Text style={styles.emptySubtitle}>Toque no + para registrar um gasto ou receita</Text>
+              <Text style={styles.emptySubtitle}>Toque no + para registrar</Text>
             </View>
           ) : (
             finances.map((f) => (
               <View key={f.id} style={styles.transactionCard}>
                 <View style={[styles.transactionIcon, {
-                  backgroundColor: f.tipo === 'receita' ? Colors.success + '20' : Colors.danger + '20'
+                  backgroundColor: f.tipo === 'receita' ? Colors.successLight : Colors.dangerLight
                 }]}>
                   <Ionicons
-                    name={categoryIcons[f.categoria?.toLowerCase()] || (f.tipo === 'receita' ? 'arrow-up' : 'arrow-down')}
+                    name={getCategoryIcon(f.categoria)}
                     size={20}
                     color={f.tipo === 'receita' ? Colors.success : Colors.danger}
                   />
@@ -189,14 +203,14 @@ export default function FinancesScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Novo registro</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={Colors.textMuted} />
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={20} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            {/* Tipo */}
             <Text style={styles.label}>Tipo *</Text>
             <View style={styles.tipoRow}>
               <TouchableOpacity
@@ -262,9 +276,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'flex-start', padding: 20, paddingBottom: 12,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  title: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
-  subtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
+  title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
+  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
   addBtn: {
     width: 44, height: 44, borderRadius: 14,
     backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
@@ -272,68 +288,85 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: 20, paddingTop: 8, paddingBottom: 40 },
+  scroll: { padding: 20, paddingBottom: 40 },
   summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   summaryCard: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 16,
-    padding: 16, borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.white, borderRadius: 18, padding: 16,
+    borderTopWidth: 3,
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  summaryReceita: { borderLeftWidth: 3, borderLeftColor: Colors.success },
-  summaryGasto: { borderLeftWidth: 3, borderLeftColor: Colors.danger },
-  summaryLabel: { fontSize: 12, color: Colors.textMuted, marginTop: 6 },
-  summaryValue: { fontSize: 18, fontWeight: 'bold', marginTop: 4 },
+  summaryIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  summaryLabel: { fontSize: 12, color: Colors.textMuted, marginBottom: 4 },
+  summaryValue: { fontSize: 18, fontWeight: 'bold' },
   saldoCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    borderWidth: 1, marginBottom: 24, flexDirection: 'row',
-    justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: Colors.white, borderRadius: 18, padding: 18,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  saldoLabel: { fontSize: 15, color: Colors.textMuted, fontWeight: '500' },
-  saldoValue: { fontSize: 22, fontWeight: 'bold' },
-  sectionTitle: { fontSize: 17, fontWeight: '600', color: Colors.text, marginBottom: 12 },
+  saldoLabel: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
+  saldoValue: { fontSize: 26, fontWeight: 'bold', marginTop: 4 },
+  saldoIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: Colors.text, marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 8, textAlign: 'center' },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 24,
+    backgroundColor: Colors.warningLight,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
+  emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6 },
   transactionCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 16,
-    padding: 14, marginBottom: 10, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.white, borderRadius: 18, padding: 14, marginBottom: 10,
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  transactionIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  transactionIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   transactionContent: { flex: 1 },
-  transactionTitle: { fontSize: 14, fontWeight: '500', color: Colors.text },
+  transactionTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
   transactionDate: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
   transactionRight: { alignItems: 'flex-end', gap: 6 },
   transactionValue: { fontSize: 15, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: 24,
-    borderTopRightRadius: 24, padding: 24,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.white, borderTopLeftRadius: 28,
+    borderTopRightRadius: 28, padding: 24, paddingTop: 12,
+  },
+  modalHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 20,
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
-  label: { fontSize: 13, color: Colors.textMuted, fontWeight: '500', marginBottom: 6, marginTop: 12 },
+  closeBtn: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  label: { fontSize: 13, color: Colors.text, fontWeight: '600', marginBottom: 6, marginTop: 14 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: Colors.surfaceLight, borderRadius: 14,
+    paddingHorizontal: 14, paddingVertical: 13,
     color: Colors.text, fontSize: 15,
   },
   tipoRow: { flexDirection: 'row', gap: 10 },
   tipoBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 12, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight,
+    gap: 6, paddingVertical: 13, borderRadius: 14,
+    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white,
   },
   tipoBtnGasto: { backgroundColor: Colors.danger, borderColor: Colors.danger },
   tipoBtnReceita: { backgroundColor: Colors.success, borderColor: Colors.success },
   tipoBtnText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
   saveBtn: {
     backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 16, alignItems: 'center', marginTop: 20,
+    padding: 16, alignItems: 'center', marginTop: 24,
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },

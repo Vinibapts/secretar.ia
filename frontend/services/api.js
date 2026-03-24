@@ -47,4 +47,25 @@ export const deleteHabit = (id) => api.delete(`/habits/${id}`);
 
 export const sendMessage = (data) => api.post('/ai/chat', data);
 
+export const transcribeAudio = async (uri) => {
+  const token = await AsyncStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('audio', {
+    uri: uri,
+    type: 'audio/m4a',
+    name: 'audio.m4a',
+  });
+  return axios.post(`${API_URL}/ai/transcribe`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      'Authorization': `Bearer ${token}`,
+    },
+    timeout: 30000,
+  });
+};
+
+// Ranking
+export const getMeuRanking = () => api.get('/ranking/meu');
+export const getTopRanking = () => api.get('/ranking/top10');
+
 export default api;

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Any, List
 from datetime import datetime
 from enum import Enum
 
@@ -120,4 +120,52 @@ class ChatMessage(BaseModel):
 
 class ChatResponse(BaseModel):
     resposta: str
-    acao_executada: Optional[str] = None
+    acao_executada: Optional[Any] = None
+
+# ─── RANKING ─────────────────────────────────────────
+class UserPointsCreate(BaseModel):
+    pontos_total: int = 0
+    pontos_hoje: int = 0
+    streak_dias: int = 0
+    streak_vidas: int = 3
+    nivel: str = "Iniciante"
+
+class UserPointsOut(UserPointsCreate):
+    id: int
+    user_id: int
+    ultimo_acesso: Optional[datetime]
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class PointHistoryCreate(BaseModel):
+    pontos: int
+    motivo: str
+
+class PointHistoryOut(PointHistoryCreate):
+    id: int
+    user_id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class RankingMeuOut(BaseModel):
+    pontos_total: int
+    pontos_hoje: int
+    streak_dias: int
+    streak_vidas: int
+    nivel: str
+    proximo_nivel: str
+    pontos_proximo_nivel: int
+    pontos_faltantes: int
+    progresso_percentual: float
+    historico_hoje: List[PointHistoryOut]
+    posicao_ranking: Optional[int] = None
+
+class RankingTopOut(BaseModel):
+    posicao: int
+    user_id: int
+    nome: str
+    pontos_total: int
+    nivel: str
+    streak_dias: int

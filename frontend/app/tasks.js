@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, TextInput,
+  StyleSheet, SafeAreaView, Modal, TextInput,
   Alert, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { getTasks, createTask, updateTask, deleteTask } from '../services/api';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function TasksScreen() {
   const [tasks, setTasks] = useState([]);
@@ -19,9 +18,7 @@ export default function TasksScreen() {
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState('todas');
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  useEffect(() => { loadTasks(); }, []);
 
   const loadTasks = async () => {
     try {
@@ -36,7 +33,7 @@ export default function TasksScreen() {
 
   const handleCreate = async () => {
     if (!titulo) {
-      Alert.alert('Atenção', 'Preencha o título da tarefa!');
+      Alert.alert('Atenção', 'Preencha o título!');
       return;
     }
     setSaving(true);
@@ -55,11 +52,9 @@ export default function TasksScreen() {
   };
 
   const handleToggle = async (task) => {
-    const nextStatus = task.status === 'a_fazer'
-      ? 'em_andamento'
-      : task.status === 'em_andamento'
-      ? 'concluido'
-      : 'a_fazer';
+    const nextStatus =
+      task.status === 'a_fazer' ? 'em_andamento' :
+      task.status === 'em_andamento' ? 'concluido' : 'a_fazer';
     try {
       await updateTask(task.id, { status: nextStatus });
       loadTasks();
@@ -73,28 +68,25 @@ export default function TasksScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir', style: 'destructive',
-        onPress: async () => {
-          await deleteTask(id);
-          loadTasks();
-        }
+        onPress: async () => { await deleteTask(id); loadTasks(); }
       }
     ]);
   };
 
-  const filteredTasks = filter === 'todas'
-    ? tasks
-    : tasks.filter(t => t.status === filter);
+  const filteredTasks = filter === 'todas' ? tasks : tasks.filter(t => t.status === filter);
 
-  const prioridades = ['alta', 'media', 'baixa'];
+  const highPriority = filteredTasks.filter(t => t.prioridade === 'alta');
+  const medPriority = filteredTasks.filter(t => t.prioridade === 'media');
+  const lowPriority = filteredTasks.filter(t => t.prioridade === 'baixa');
 
   const priorityConfig = {
-    alta: { color: Colors.danger, label: 'Alta' },
-    media: { color: Colors.warning, label: 'Média' },
-    baixa: { color: Colors.textMuted, label: 'Baixa' },
+    alta: { color: Colors.danger, bg: Colors.dangerLight, label: 'Alta' },
+    media: { color: Colors.warning, bg: Colors.warningLight, label: 'Média' },
+    baixa: { color: Colors.textMuted, bg: Colors.surfaceLight, label: 'Baixa' },
   };
 
   const statusConfig = {
-    a_fazer: { icon: 'ellipse-outline', color: Colors.textMuted },
+    a_fazer: { icon: 'ellipse-outline', color: Colors.border },
     em_andamento: { icon: 'time-outline', color: Colors.primary },
     concluido: { icon: 'checkmark-circle', color: Colors.success },
   };
@@ -106,24 +98,80 @@ export default function TasksScreen() {
     { key: 'concluido', label: 'Concluídas' },
   ];
 
+  const prioridades = ['alta', 'media', 'baixa'];
+
+  const totalPendentes = tasks.filter(t => t.status !== 'concluido').length;
+  const totalConcluidas = tasks.filter(t => t.status === 'concluido').length;
+
+  const renderTask = (task) => {
+    const sc = statusConfig[task.status];
+    const pc = priorityConfig[task.prioridade];
+    return (
+      <TouchableOpacity
+        key={task.id}
+        style={[styles.taskCard, task.status === 'concluido' && styles.taskCardDone]}
+        onPress={() => handleToggle(task)}
+        activeOpacity={0.7}
+      >
+        <Ionicons name={sc.icon} size={22} color={sc.color} />
+        <View style={styles.taskContent}>
+          <Text style={[
+            styles.taskTitle,
+            task.status === 'concluido' && styles.taskTitleDone
+          ]}>
+            {task.titulo}
+          </Text>
+          {task.categoria ? (
+            <Text style={styles.taskCategory}>{task.categoria}</Text>
+          ) : null}
+        </View>
+        <View style={styles.taskRight}>
+          <View style={[styles.priorityBadge, { backgroundColor: pc.bg }]}>
+            <Text style={[styles.priorityText, { color: pc.color }]}>{pc.label}</Text>
+          </View>
+          <TouchableOpacity onPress={() => handleDelete(task.id)} style={styles.deleteBtn}>
+            <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderGroup = (title, taskList, dotColor) => {
+    if (taskList.length === 0) return null;
+    return (
+      <View style={styles.group}>
+        <View style={styles.groupHeader}>
+          <View style={[styles.groupDot, { backgroundColor: dotColor }]} />
+          <Text style={styles.groupTitle}>{title}</Text>
+          <Text style={styles.groupCount}>{taskList.length}</Text>
+        </View>
+        {taskList.map(renderTask)}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Tarefas</Text>
-          <Text style={styles.subtitle}>Gerencie suas atividades</Text>
+          <Text style={styles.subtitle}>
+            {totalPendentes} pendentes · {totalConcluidas} concluídas
+          </Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
           <Ionicons name="add" size={24} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
-      {/* Filters */}
+      {/* Filtros */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filters}
+        style={styles.filtersWrapper}
       >
         {filters.map(f => (
           <TouchableOpacity
@@ -146,57 +194,31 @@ export default function TasksScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {filteredTasks.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="checkmark-circle-outline" size={64} color={Colors.textMuted} />
+              <View style={styles.emptyIcon}>
+                <Ionicons name="checkmark-circle-outline" size={36} color={Colors.success} />
+              </View>
               <Text style={styles.emptyTitle}>Nenhuma tarefa</Text>
               <Text style={styles.emptySubtitle}>Toque no + para adicionar uma tarefa</Text>
             </View>
           ) : (
-            filteredTasks.map((task) => {
-              const sc = statusConfig[task.status];
-              const pc = priorityConfig[task.prioridade];
-              return (
-                <TouchableOpacity
-                  key={task.id}
-                  style={styles.taskCard}
-                  onPress={() => handleToggle(task)}
-                >
-                  <Ionicons name={sc.icon} size={24} color={sc.color} />
-                  <View style={styles.taskContent}>
-                    <Text style={[
-                      styles.taskTitle,
-                      task.status === 'concluido' && styles.taskTitleDone
-                    ]}>
-                      {task.titulo}
-                    </Text>
-                    <View style={styles.taskMeta}>
-                      {task.categoria ? (
-                        <Text style={styles.taskCategory}>{task.categoria}</Text>
-                      ) : null}
-                      <View style={[styles.priorityBadge, { backgroundColor: pc.color + '20' }]}>
-                        <Text style={[styles.priorityText, { color: pc.color }]}>
-                          {pc.label}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <TouchableOpacity onPress={() => handleDelete(task.id)}>
-                    <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })
+            <>
+              {renderGroup('Prioridade Alta', highPriority, Colors.danger)}
+              {renderGroup('Prioridade Média', medPriority, Colors.warning)}
+              {renderGroup('Prioridade Baixa', lowPriority, Colors.textMuted)}
+            </>
           )}
         </ScrollView>
       )}
 
-      {/* Modal criar tarefa */}
+      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Nova tarefa</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={Colors.textMuted} />
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={20} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -220,26 +242,28 @@ export default function TasksScreen() {
 
             <Text style={styles.label}>Prioridade</Text>
             <View style={styles.priorityRow}>
-              {prioridades.map(p => (
-                <TouchableOpacity
-                  key={p}
-                  style={[
-                    styles.priorityOption,
-                    prioridade === p && {
-                      backgroundColor: priorityConfig[p].color + '20',
-                      borderColor: priorityConfig[p].color,
-                    }
-                  ]}
-                  onPress={() => setPrioridade(p)}
-                >
-                  <Text style={[
-                    styles.priorityOptionText,
-                    prioridade === p && { color: priorityConfig[p].color }
-                  ]}>
-                    {priorityConfig[p].label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {prioridades.map(p => {
+                const pc = priorityConfig[p];
+                const active = prioridade === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    style={[
+                      styles.priorityOption,
+                      active && { backgroundColor: pc.bg, borderColor: pc.color }
+                    ]}
+                    onPress={() => setPrioridade(p)}
+                  >
+                    <View style={[styles.priorityDot, { backgroundColor: pc.color }]} />
+                    <Text style={[
+                      styles.priorityOptionText,
+                      active && { color: pc.color, fontWeight: '700' }
+                    ]}>
+                      {pc.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
@@ -260,70 +284,105 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', padding: 20, paddingBottom: 12,
+    alignItems: 'flex-start', padding: 20, paddingBottom: 14,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  title: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
-  subtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
+  title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
+  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
   addBtn: {
     width: 44, height: 44, borderRadius: 14,
     backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },
-  filters: { paddingHorizontal: 20, paddingBottom: 12, gap: 8 },
-  filterBtn: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.border,
+  filtersWrapper: {
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  filterBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  filters: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  filterBtn: {
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 20, backgroundColor: Colors.surfaceLight,
+  },
+  filterBtnActive: { backgroundColor: Colors.primary },
   filterText: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
-  filterTextActive: { color: Colors.white },
+  filterTextActive: { color: Colors.white, fontWeight: '600' },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: 20, paddingTop: 8, paddingBottom: 40 },
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: Colors.text, marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 8, textAlign: 'center' },
+  scroll: { padding: 16, paddingBottom: 40 },
+  emptyContainer: { alignItems: 'center', paddingTop: 80 },
+  emptyIcon: {
+    width: 72, height: 72, borderRadius: 22,
+    backgroundColor: Colors.successLight,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
+  emptySubtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 6 },
+  group: { marginBottom: 20 },
+  groupHeader: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 8, marginBottom: 10,
+  },
+  groupDot: { width: 8, height: 8, borderRadius: 4 },
+  groupTitle: { fontSize: 13, fontWeight: '700', color: Colors.textMuted, flex: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
+  groupCount: {
+    fontSize: 12, fontWeight: '700', color: Colors.textMuted,
+    backgroundColor: Colors.surfaceLight,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
+  },
   taskCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 16,
-    padding: 16, marginBottom: 10, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.white, borderRadius: 14,
+    padding: 14, marginBottom: 8,
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 1,
   },
+  taskCardDone: { opacity: 0.6 },
   taskContent: { flex: 1 },
-  taskTitle: { fontSize: 15, fontWeight: '500', color: Colors.text },
+  taskTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
   taskTitleDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  taskMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  taskCategory: { fontSize: 12, color: Colors.textMuted },
-  priorityBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
-  priorityText: { fontSize: 11, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  taskCategory: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  taskRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  priorityBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  priorityText: { fontSize: 11, fontWeight: '700' },
+  deleteBtn: { padding: 4 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalCard: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: 24,
-    borderTopRightRadius: 24, padding: 24,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.white, borderTopLeftRadius: 28,
+    borderTopRightRadius: 28, padding: 24, paddingTop: 12,
+  },
+  modalHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 20,
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
-  label: { fontSize: 13, color: Colors.textMuted, fontWeight: '500', marginBottom: 6, marginTop: 12 },
+  closeBtn: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  label: { fontSize: 13, color: Colors.text, fontWeight: '600', marginBottom: 6, marginTop: 14 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: Colors.surfaceLight, borderRadius: 14,
+    paddingHorizontal: 14, paddingVertical: 13,
     color: Colors.text, fontSize: 15,
   },
-  priorityRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  priorityRow: { flexDirection: 'row', gap: 8 },
   priorityOption: {
-    flex: 1, paddingVertical: 10, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', backgroundColor: Colors.surfaceLight,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 12, borderRadius: 14,
+    borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.white,
   },
-  priorityOptionText: { fontSize: 14, fontWeight: '500', color: Colors.textMuted },
+  priorityDot: { width: 8, height: 8, borderRadius: 4 },
+  priorityOptionText: { fontSize: 13, fontWeight: '500', color: Colors.textMuted },
   saveBtn: {
     backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 16, alignItems: 'center', marginTop: 20,
+    padding: 16, alignItems: 'center', marginTop: 24,
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },

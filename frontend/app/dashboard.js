@@ -1,33 +1,42 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity,
+  StyleSheet, SafeAreaView, ActivityIndicator
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/colors';
-import { getEvents, getTasks, getResumo } from '../services/api';
+import { getEvents, getResumo } from '../services/api';
 
 export default function DashboardScreen({ navigation }) {
   const [events, setEvents] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [resumo, setResumo] = useState({ total_receitas: 0, total_gastos: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
   const [hora, setHora] = useState('');
+  const [nomeUsuario, setNomeUsuario] = useState('');
 
   useEffect(() => {
     const h = new Date().getHours();
     setHora(h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite');
-    loadData();
+    AsyncStorage.getItem('nomeUsuario').then(nome => {
+      if (nome) setNomeUsuario(nome.split(' ')[0]);
+    });
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     try {
-      const [eventsRes, tasksRes, resumoRes] = await Promise.all([
+      const [eventsRes, resumoRes] = await Promise.all([
         getEvents(),
-        getTasks(),
         getResumo(),
       ]);
       setEvents(eventsRes.data.slice(0, 3));
-      setTasks(tasksRes.data.filter(t => t.status !== 'concluido').slice(0, 3));
       setResumo(resumoRes.data);
     } catch (err) {
       console.log('Erro ao carregar dados:', err);
@@ -38,8 +47,21 @@ export default function DashboardScreen({ navigation }) {
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
-    navigation?.navigate('Login');
+    await AsyncStorage.removeItem('keepConnected');
   };
+
+  const statCards = [
+    { label: 'Eventos hoje', value: String(events.length), icon: 'calendar', color: '#3B82F6', bg: '#EFF6FF' },
+    { label: 'Saldo do mês', value: `R$ ${resumo.saldo.toFixed(0)}`, icon: 'wallet', color: '#F59E0B', bg: '#FFFBEB' },
+    { label: 'Receitas', value: `R$ ${resumo.total_receitas.toFixed(0)}`, icon: 'trending-up', color: '#10B981', bg: '#ECFDF5' },
+    { label: 'Gastos', value: `R$ ${resumo.total_gastos.toFixed(0)}`, icon: 'trending-down', color: '#EF4444', bg: '#FEF2F2' },
+  ];
+
+  const shortcuts = [
+    { label: 'Agenda', icon: 'calendar', color: '#8B5CF6', bg: '#F5F3FF', tab: 'Agenda' },
+    { label: 'Finanças', icon: 'wallet', color: '#F59E0B', bg: '#FFFBEB', tab: 'Finanças' },
+    { label: 'Ranking', icon: 'trophy', color: '#3B82F6', bg: '#EFF6FF', tab: 'Ranking' },
+  ];
 
   if (loading) {
     return (
@@ -56,7 +78,7 @@ export default function DashboardScreen({ navigation }) {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>{hora}, Vinícius 👋</Text>
+            <Text style={styles.greeting}>{hora}{nomeUsuario ? `, ${nomeUsuario}` : ''} 👋</Text>
             <Text style={styles.subGreeting}>Aqui está o resumo do seu dia</Text>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
@@ -66,44 +88,28 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Stat Cards */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-            <Text style={styles.statNumber}>{events.length}</Text>
-            <Text style={styles.statLabel}>Eventos hoje</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.success} />
-            <Text style={styles.statNumber}>{tasks.length}</Text>
-            <Text style={styles.statLabel}>Tarefas pendentes</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="wallet-outline" size={20} color={Colors.warning} />
-            <Text style={styles.statNumber}>R$ {resumo.saldo.toFixed(0)}</Text>
-            <Text style={styles.statLabel}>Saldo do mês</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="heart-outline" size={20} color={Colors.danger} />
-            <Text style={styles.statNumber}>0/0</Text>
-            <Text style={styles.statLabel}>Hábitos hoje</Text>
-          </View>
+          {statCards.map((card, i) => (
+            <View key={i} style={styles.statCard}>
+              <View style={[styles.statIcon, { backgroundColor: card.bg }]}>
+                <Ionicons name={card.icon} size={20} color={card.color} />
+              </View>
+              <Text style={styles.statNumber}>{card.value}</Text>
+              <Text style={styles.statLabel}>{card.label}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Shortcuts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Acesso rápido</Text>
           <View style={styles.shortcuts}>
-            {[
-              { label: 'Chat IA', icon: 'chatbubble-ellipses', color: Colors.primary, tab: 'Chat' },
-              { label: 'Agenda', icon: 'calendar', color: Colors.accent, tab: 'Agenda' },
-              { label: 'Tarefas', icon: 'checkmark-circle', color: Colors.success, tab: 'Tarefas' },
-              { label: 'Finanças', icon: 'wallet', color: Colors.warning, tab: 'Finanças' },
-            ].map((s) => (
+            {shortcuts.map((s) => (
               <TouchableOpacity
                 key={s.label}
                 style={styles.shortcut}
                 onPress={() => navigation?.navigate(s.tab)}
               >
-                <View style={[styles.shortcutIcon, { backgroundColor: s.color + '20' }]}>
+                <View style={[styles.shortcutIcon, { backgroundColor: s.bg }]}>
                   <Ionicons name={s.icon} size={22} color={s.color} />
                 </View>
                 <Text style={styles.shortcutLabel}>{s.label}</Text>
@@ -112,7 +118,7 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Próximos eventos */}
+        {/* Próximos compromissos */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Próximos compromissos</Text>
@@ -122,51 +128,30 @@ export default function DashboardScreen({ navigation }) {
           </View>
           {events.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Ionicons name="calendar-outline" size={32} color={Colors.textMuted} />
+              <Ionicons name="calendar-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
               <Text style={styles.emptyText}>Nenhum evento cadastrado</Text>
+              <Text style={styles.emptySubtext}>Use o botão de voz para criar compromissos</Text>
             </View>
           ) : (
             events.map((evt, i) => (
               <View key={i} style={styles.eventCard}>
-                <View style={styles.eventTime}>
-                  <Ionicons name="time-outline" size={14} color={Colors.textMuted} />
+                <View style={styles.eventTimeBox}>
                   <Text style={styles.eventTimeText}>
-                    {new Date(evt.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(evt.data_inicio).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit', minute: '2-digit'
+                    })}
                   </Text>
                 </View>
-                <Text style={styles.eventTitle}>{evt.titulo}</Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* Tarefas pendentes */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tarefas pendentes</Text>
-            <TouchableOpacity onPress={() => navigation?.navigate('Tarefas')}>
-              <Text style={styles.sectionLink}>Ver todas</Text>
-            </TouchableOpacity>
-          </View>
-          {tasks.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Ionicons name="checkmark-circle-outline" size={32} color={Colors.textMuted} />
-              <Text style={styles.emptyText}>Nenhuma tarefa pendente</Text>
-            </View>
-          ) : (
-            tasks.map((task, i) => (
-              <View key={i} style={styles.taskCard}>
-                <View style={[styles.taskDot, {
-                  backgroundColor: task.prioridade === 'alta' ? Colors.danger : Colors.warning
-                }]} />
-                <Text style={styles.taskTitle}>{task.titulo}</Text>
-                <View style={[styles.taskBadge, {
-                  backgroundColor: task.prioridade === 'alta' ? Colors.danger + '20' : Colors.warning + '20'
-                }]}>
-                  <Text style={[styles.taskBadgeText, {
-                    color: task.prioridade === 'alta' ? Colors.danger : Colors.warning
-                  }]}>{task.prioridade}</Text>
+                <View style={styles.eventBar} />
+                <View style={styles.eventContent}>
+                  <Text style={styles.eventTitle}>{evt.titulo}</Text>
+                  <Text style={styles.eventDate}>
+                    {new Date(evt.data_inicio).toLocaleDateString('pt-BR', {
+                      weekday: 'short', day: '2-digit', month: 'short'
+                    })}
+                  </Text>
                 </View>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
               </View>
             ))
           )}
@@ -182,47 +167,54 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: 20, paddingBottom: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  greeting: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
-  subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 4 },
+  greeting: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+  subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
   logoutBtn: { padding: 8 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   statCard: {
-    flex: 1, minWidth: '45%', backgroundColor: Colors.surface,
-    borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.border,
+    flex: 1, minWidth: '45%', backgroundColor: Colors.white,
+    borderRadius: 20, padding: 16,
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 16, elevation: 3,
   },
-  statNumber: { fontSize: 22, fontWeight: 'bold', color: Colors.text, marginTop: 8 },
+  statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  statNumber: { fontSize: 22, fontWeight: 'bold', color: Colors.text },
   statLabel: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
   section: { marginBottom: 24 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 17, fontWeight: '600', color: Colors.text, marginBottom: 12 },
-  sectionLink: { fontSize: 13, color: Colors.primary },
-  shortcuts: { flexDirection: 'row', gap: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
+  sectionLink: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  shortcuts: { flexDirection: 'row', gap: 10 },
   shortcut: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 16,
-    padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.white, borderRadius: 18,
+    padding: 12, alignItems: 'center',
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  shortcutIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  shortcutLabel: { fontSize: 12, color: Colors.text, fontWeight: '500' },
+  shortcutIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  shortcutLabel: { fontSize: 11, color: Colors.text, fontWeight: '600' },
   eventCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 0,
+    backgroundColor: Colors.white, borderRadius: 16,
+    marginBottom: 8, overflow: 'hidden',
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  eventTime: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 60 },
-  eventTimeText: { fontSize: 12, color: Colors.textMuted },
-  eventTitle: { flex: 1, fontSize: 14, color: Colors.text, fontWeight: '500' },
-  taskCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 8,
+  eventTimeBox: {
+    width: 56, paddingVertical: 16,
+    alignItems: 'center', backgroundColor: Colors.primaryLight,
   },
-  taskDot: { width: 8, height: 8, borderRadius: 4 },
-  taskTitle: { flex: 1, fontSize: 14, color: Colors.text },
-  taskBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  taskBadgeText: { fontSize: 11, fontWeight: '600' },
+  eventTimeText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+  eventBar: { width: 3, alignSelf: 'stretch', backgroundColor: Colors.primary },
+  eventContent: { flex: 1, padding: 12 },
+  eventTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  eventDate: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
   emptyCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 32,
-    alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.white, borderRadius: 20, padding: 32,
+    alignItems: 'center',
+    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 8 },
+  emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 10, fontWeight: '600' },
+  emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4, opacity: 0.7 },
 });

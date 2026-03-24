@@ -7,6 +7,7 @@ from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 import os
+from routers.ranking import adicionar_pontos
 
 load_dotenv()
 
@@ -40,6 +41,13 @@ def criar_evento(event: EventCreate, db: Session = Depends(get_db), current_user
     db.add(novo)
     db.commit()
     db.refresh(novo)
+    
+    # Adicionar pontos por criar evento
+    try:
+        adicionar_pontos(current_user.id, 10, "Criou evento na agenda", db)
+    except Exception as e:
+        print(f"Erro ao adicionar pontos: {e}")
+    
     return novo
 
 @router.get("/", response_model=list[EventOut])

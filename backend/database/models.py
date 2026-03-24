@@ -37,6 +37,9 @@ class User(Base):
     tasks = relationship("Task", back_populates="user")
     finances = relationship("Finance", back_populates="user")
     habits = relationship("Habit", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
+    points = relationship("UserPoints", back_populates="user", uselist=False)
+    point_history = relationship("PointHistory", back_populates="user")
 
 class Event(Base):
     __tablename__ = "events"
@@ -105,3 +108,29 @@ class Notification(Base):
     enviado = Column(Boolean, default=False)
     enviado_em = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="notifications")
+
+class UserPoints(Base):
+    __tablename__ = "user_points"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    pontos_total = Column(Integer, default=0)
+    pontos_hoje = Column(Integer, default=0)
+    streak_dias = Column(Integer, default=0)
+    streak_vidas = Column(Integer, default=3)
+    ultimo_acesso = Column(DateTime(timezone=True), nullable=True)
+    nivel = Column(String(20), default="Iniciante")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="points")
+
+class PointHistory(Base):
+    __tablename__ = "point_history"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    pontos = Column(Integer, nullable=False)
+    motivo = Column(String(100), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="point_history")
