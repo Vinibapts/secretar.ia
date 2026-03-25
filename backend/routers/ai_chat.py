@@ -178,11 +178,11 @@ async def criar_evento(parametros: dict, user: User, db: Session, forcar_criacao
     data_evento = interpretar_data(data, hora)
     descricao = local if local else ""
 
-    # 🔍 VERIFICAR EVENTOS EXISTENTES NO MESMO HORÁRIO
+    # 🔍 VERIFICAR EVENTOS EXISTENTES NO EXATAMENTE MESMO DIA E HORÁRIO
     eventos_conflitantes = db.query(Event).filter(
         Event.user_id == user.id,
-        Event.data_inicio <= data_evento,
-        Event.data_fim >= data_evento
+        Event.data_inicio >= data_evento.replace(minute=0, second=0, microsecond=0),
+        Event.data_inicio < data_evento.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
     ).all()
 
     # 🎯 CRIAR EVENTO NOVO DIRETO - SEM BLOQUEAR
@@ -216,16 +216,20 @@ async def criar_evento(parametros: dict, user: User, db: Session, forcar_criacao
     except Exception as e:
         print(f"Erro ao adicionar pontos (evento): {e}")
 
-    data_fmt = data_evento.strftime('%d/%m/%Y às %H:%M')
-    mensagem_base = f"Perfeito! Evento '{titulo}' agendado para {data_fmt}" + (f" em {local}" if local else "")
+    data_fmt = data_evento.strftime('%d/%m/%Y')
+    hora_fmt = data_evento.strftime('%H:%M')
+    local_fmt = f" em {local}" if local else ""
     
-    # 📢 ADICIONAR AVISO SOBRE EVENTOS EXISTENTES
+    # 📢 MONTAR MENSAGEM CORRETA
+    mensagem_base = f"Agendado! Evento '{titulo}' Criado para Dia {data_fmt} às {hora_fmt}{local_fmt}."
+    
+    # 📢 ADICIONAR AVISO APENAS SE TIVER CONFLITO EXATO (MESMO HORÁRIO)
     if eventos_conflitantes:
         eventos_nomes = [f"'{e.titulo}'" for e in eventos_conflitantes]
         if len(eventos_nomes) == 1:
-            aviso = f" ⚠️ Aviso: Você já tinha {eventos_nomes[0]} nesse mesmo horário, mas mantive ambos os eventos."
+            aviso = f"\n⚠️ Lembrando que você já tem uma reunião nesse mesmo horário em {eventos_nomes[0]}"
         else:
-            aviso = f" ⚠️ Aviso: Você já tinha {', '.join(eventos_nomes[:-1])} e {eventos_nomes[-1]} nesse mesmo horário, mas mantive todos os eventos."
+            aviso = f"\n⚠️ Lembrando que você já tem reuniões nesse mesmo horário em {', '.join(eventos_nomes[:-1])} e {eventos_nomes[-1]}"
         mensagem_final = mensagem_base + aviso
     else:
         mensagem_final = mensagem_base
