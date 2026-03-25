@@ -3,7 +3,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Modal, TextInput,
-  Alert, ActivityIndicator
+  Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform,
+  Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../constants/colors';
@@ -295,67 +297,74 @@ export default function FinancesScreen() {
       )}
 
       <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Novo registro</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color={Colors.textMuted} />
-              </TouchableOpacity>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalCard}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Novo registro</Text>
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                    <Ionicons name="close" size={20} color={Colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.label}>Tipo *</Text>
+                <View style={styles.tipoRow}>
+                  <TouchableOpacity
+                    style={[styles.tipoBtn, tipo === 'gasto' && styles.tipoBtnGasto]}
+                    onPress={() => setTipo('gasto')}
+                  >
+                    <Ionicons name="trending-down" size={18} color={tipo === 'gasto' ? Colors.white : Colors.textMuted} />
+                    <Text style={[styles.tipoBtnText, tipo === 'gasto' && { color: Colors.white }]}>Gasto</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.tipoBtn, tipo === 'receita' && styles.tipoBtnReceita]}
+                    onPress={() => setTipo('receita')}
+                  >
+                    <Ionicons name="trending-up" size={18} color={tipo === 'receita' ? Colors.white : Colors.textMuted} />
+                    <Text style={[styles.tipoBtnText, tipo === 'receita' && { color: Colors.white }]}>Receita</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.label}>Valor (R$) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0,00"
+                  placeholderTextColor={Colors.textMuted}
+                  value={valor}
+                  onChangeText={setValor}
+                  keyboardType="decimal-pad"
+                />
+
+                <Text style={styles.label}>Categoria</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Alimentação, Salário..."
+                  placeholderTextColor={Colors.textMuted}
+                  value={categoria}
+                  onChangeText={setCategoria}
+                />
+
+                <Text style={styles.label}>Descrição</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Almoço no restaurante"
+                  placeholderTextColor={Colors.textMuted}
+                  value={descricao}
+                  onChangeText={setDescricao}
+                />
+
+                <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
+                  {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <Text style={styles.label}>Tipo *</Text>
-            <View style={styles.tipoRow}>
-              <TouchableOpacity
-                style={[styles.tipoBtn, tipo === 'gasto' && styles.tipoBtnGasto]}
-                onPress={() => setTipo('gasto')}
-              >
-                <Ionicons name="trending-down" size={18} color={tipo === 'gasto' ? Colors.white : Colors.textMuted} />
-                <Text style={[styles.tipoBtnText, tipo === 'gasto' && { color: Colors.white }]}>Gasto</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tipoBtn, tipo === 'receita' && styles.tipoBtnReceita]}
-                onPress={() => setTipo('receita')}
-              >
-                <Ionicons name="trending-up" size={18} color={tipo === 'receita' ? Colors.white : Colors.textMuted} />
-                <Text style={[styles.tipoBtnText, tipo === 'receita' && { color: Colors.white }]}>Receita</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Valor (R$) *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0,00"
-              placeholderTextColor={Colors.textMuted}
-              value={valor}
-              onChangeText={setValor}
-              keyboardType="decimal-pad"
-            />
-
-            <Text style={styles.label}>Categoria</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Alimentação, Salário..."
-              placeholderTextColor={Colors.textMuted}
-              value={categoria}
-              onChangeText={setCategoria}
-            />
-
-            <Text style={styles.label}>Descrição</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Almoço no restaurante"
-              placeholderTextColor={Colors.textMuted}
-              value={descricao}
-              onChangeText={setDescricao}
-            />
-
-            <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
-              {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
-            </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

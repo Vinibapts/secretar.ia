@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, SafeAreaView, FlatList,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -302,88 +303,76 @@ export default function ChatScreen() {
       color: Colors.textMuted, 
       fontSize: 14, 
       fontWeight: '600' 
-    },
+    }
   });
 
   const hasInput = input.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={styles.inner}
-        keyboardVerticalOffset={90}
       >
-        <View style={styles.header}>
-          <View style={styles.headerAvatar}>
-            <Ionicons name="sparkles" size={22} color={Colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>
-              Secretar<Text style={styles.headerAccent}>.IA</Text>
-            </Text>
-            <View style={styles.headerStatus}>
-              <View style={styles.statusDot} />
-              <Text style={styles.headerStatusText}>Online — pronta para ajudar</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.inner}>
+            <View style={styles.header}>
+              <View style={styles.headerAvatar}>
+                <Ionicons name="sparkles" size={22} color={Colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.headerTitle}>
+                  Secretar<Text style={styles.headerAccent}>.IA</Text>
+                </Text>
+                <View style={styles.headerStatus}>
+                  <View style={styles.statusDot} />
+                  <Text style={styles.headerStatusText}>Online</Text>
+                </View>
+              </View>
+            </View>
+
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.messagesList}
+              showsVerticalScrollIndicator={false}
+            />
+
+            {isRecording && (
+              <View style={styles.recordingRow}>
+                <View style={styles.recordingDot} />
+                <Text style={styles.recordingText}>Gravando... Toque para parar</Text>
+              </View>
+            )}
+
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                placeholder="Digite uma mensagem..."
+                placeholderTextColor={Colors.textMuted}
+                value={input}
+                onChangeText={setInput}
+                multiline
+                maxLength={500}
+              />
+              {hasInput ? (
+                <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={loading}>
+                  <Ionicons name="send" size={20} color={Colors.white} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.micBtn, isRecording && styles.micBtnRecording]}
+                  onPress={handleMicPress}
+                  disabled={loading}
+                >
+                  <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color={isRecording ? Colors.white : Colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
-        </View>
-
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-
-        {loading && (
-          <View style={styles.loadingRow}>
-            <View style={styles.avatar}>
-              <Ionicons name="sparkles" size={16} color={Colors.primary} />
-            </View>
-            <View style={styles.loadingBubble}>
-              <ActivityIndicator size="small" color={Colors.primary} />
-              <Text style={styles.loadingText}>
-                {isTranscribing ? 'Transcrevendo áudio...' : 'Processando...'}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {isRecording && (
-          <View style={styles.recordingRow}>
-            <View style={styles.recordingDot} />
-            <Text style={styles.recordingText}>Gravando... Toque para parar</Text>
-          </View>
-        )}
-
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite uma mensagem..."
-            placeholderTextColor={Colors.textMuted}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={500}
-          />
-          {hasInput ? (
-            <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={loading}>
-              <Ionicons name="send" size={20} color={Colors.white} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.micBtn, isRecording && styles.micBtnRecording]}
-              onPress={handleMicPress}
-              disabled={loading}
-            >
-              <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color={isRecording ? Colors.white : Colors.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

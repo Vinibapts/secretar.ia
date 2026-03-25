@@ -9,6 +9,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../constants/colors';
 import { login, register } from '../services/api';
 
+// Função para formatar nome do email
+const formatarNome = (email) => {
+  const nome = email.split('@')[0];
+  // Separar por letras maiúsculas ou números
+  const partes = nome.replace(/([A-Z])/g, ' $1').replace(/([0-9])/g, ' $1').trim().split(/\s+/);
+  return partes.map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase()).join(' ');
+};
+
 export default function LoginScreen({ onLogin }) {
   const Colors = useColors();
 
@@ -47,7 +55,7 @@ export default function LoginScreen({ onLogin }) {
       if (isLogin) {
         const res = await login({ email, senha });
         await AsyncStorage.setItem('token', res.data.access_token);
-        await AsyncStorage.setItem('nomeUsuario', email.split('@')[0]);
+        await AsyncStorage.setItem('nomeUsuario', formatarNome(email));
         if (keepConnected) {
           await AsyncStorage.setItem('keepConnected', 'true');
           await AsyncStorage.setItem('emailSalvo', email);

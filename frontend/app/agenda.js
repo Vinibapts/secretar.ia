@@ -2,7 +2,9 @@ import { useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Modal, TextInput,
-  Alert, ActivityIndicator, Dimensions, Animated
+  Alert, ActivityIndicator, Dimensions, Animated,
+  KeyboardAvoidingView, Platform,
+  Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -390,45 +392,52 @@ export default function AgendaScreen() {
 
       {/* Modal criar evento */}
       <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Novo evento</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color={Colors.textMuted} />
-              </TouchableOpacity>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalCard}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Novo evento</Text>
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                    <Ionicons name="close" size={20} color={Colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.label}>Título *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Reunião com equipe"
+                  placeholderTextColor={Colors.textMuted}
+                  value={titulo}
+                  onChangeText={setTitulo}
+                />
+                <Text style={styles.label}>Descrição</Text>
+                <TextInput
+                  style={[styles.input, styles.inputMultiline]}
+                  placeholder="Detalhes do evento..."
+                  placeholderTextColor={Colors.textMuted}
+                  value={descricao}
+                  onChangeText={setDescricao}
+                  multiline
+                />
+                <Text style={styles.label}>Data e hora * (AAAA-MM-DD HH:MM)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 2026-03-25 14:00"
+                  placeholderTextColor={Colors.textMuted}
+                  value={dataInicio}
+                  onChangeText={setDataInicio}
+                />
+                <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
+                  {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar evento</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.label}>Título *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Reunião com equipe"
-              placeholderTextColor={Colors.textMuted}
-              value={titulo}
-              onChangeText={setTitulo}
-            />
-            <Text style={styles.label}>Descrição</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="Detalhes do evento..."
-              placeholderTextColor={Colors.textMuted}
-              value={descricao}
-              onChangeText={setDescricao}
-              multiline
-            />
-            <Text style={styles.label}>Data e hora * (AAAA-MM-DD HH:MM)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: 2026-03-25 14:00"
-              placeholderTextColor={Colors.textMuted}
-              value={dataInicio}
-              onChangeText={setDataInicio}
-            />
-            <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
-              {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar evento</Text>}
-            </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

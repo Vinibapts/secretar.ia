@@ -14,7 +14,7 @@ class BaseAgent:
         self.name = name
         self.description = description
         self.expertise = expertise
-        self.api_key = os.getenv("GROK_API_KEY")
+        self.api_key = os.getenv("GROQ_API_KEY")
         self.created_at = datetime.now()
         
     def can_handle(self, message: str, context: Dict[str, Any] = None) -> bool:
@@ -34,10 +34,10 @@ Seja profissional, direto e prático.
 Forneça soluções implementáveis e orientações claras."""
     
     async def process_message(self, message: str, context: str = "") -> Dict[str, Any]:
-        """Processa a mensagem usando a API do Grok"""
+        """Processa a mensagem usando a API do Groq"""
         if not self.api_key or self.api_key == "sua_chave_aqui":
             return {
-                "resposta": f"Agente {self.name} ainda não configurado. Configure a chave do Grok no .env",
+                "resposta": f"Agente {self.name} ainda não configurado. Configure a chave do Groq no .env",
                 "acao_executada": None,
                 "agente": self.name,
                 "expertise": self.expertise,
@@ -49,7 +49,7 @@ Forneça soluções implementáveis e orientações claras."""
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    "https://api.x.ai/v1/chat/completions",
+                    "https://api.groq.com/openai/v1/chat/completions",
                     headers={
                         "Content-Type": "application/json",
                         "Authorization": f"Bearer {self.api_key}"
@@ -59,7 +59,7 @@ Forneça soluções implementáveis e orientações claras."""
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": message}
                         ],
-                        "model": "grok-3-latest",
+                        "model": "llama-3.3-70b-versatile",
                         "stream": False,
                         "temperature": 0.7,
                         "max_tokens": 2000

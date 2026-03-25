@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, SafeAreaView, ActivityIndicator
+  StyleSheet, SafeAreaView, ActivityIndicator,
+  Keyboard, TouchableWithoutFeedback,
+  KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,8 +23,9 @@ export default function DashboardScreen({ navigation, onLogout }) {
   useEffect(() => {
     const h = new Date().getHours();
     setHora(h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite');
+    
     AsyncStorage.getItem('nomeUsuario').then(nome => {
-      if (nome) setNomeUsuario(nome.split(' ')[0]);
+      if (nome) setNomeUsuario(nome);
     });
   }, []);
 
@@ -71,9 +74,18 @@ export default function DashboardScreen({ navigation, onLogout }) {
     loadingContainer: { flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' },
     scroll: { padding: 20, paddingBottom: 40 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-    greeting: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+    greetingContainer: { flex: 1, marginRight: 8 },
+    greeting: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
     subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
-    logoutBtn: { padding: 8 },
+    logoutBtn: { 
+      padding: 8, 
+      minWidth: 40, 
+      height: 40, 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      backgroundColor: Colors.surfaceLight,
+      borderRadius: 12
+    },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
     statCard: {
       flex: 1, minWidth: '45%', backgroundColor: Colors.surface,
@@ -151,9 +163,11 @@ export default function DashboardScreen({ navigation, onLogout }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{hora}{nomeUsuario ? `, ${nomeUsuario}` : ''} 👋</Text>
-            <Text style={styles.subGreeting}>Aqui está o seu painel</Text>
+          <View style={styles.greetingContainer}>
+            <View>
+              <Text style={styles.greeting} numberOfLines={1}>{hora}{nomeUsuario ? `, ${nomeUsuario}` : ''} 👋</Text>
+              <Text style={styles.subGreeting}>Aqui está o seu painel</Text>
+            </View>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
             <Ionicons name="log-out-outline" size={22} color={Colors.textMuted} />
