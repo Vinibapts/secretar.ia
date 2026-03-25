@@ -169,7 +169,7 @@ def interpretar_data(data_str: str, hora_str: str) -> datetime:
 
     return base
 
-async def criar_evento(parametros: dict, user: User, db: Session):
+async def criar_evento(parametros: dict, user: User, db: Session, forcar_criacao: bool = False):
     titulo = parametros.get("titulo", "Novo evento")
     data = parametros.get("data", "hoje")
     hora = parametros.get("hora", "12:00")
@@ -178,6 +178,14 @@ async def criar_evento(parametros: dict, user: User, db: Session):
     data_evento = interpretar_data(data, hora)
     descricao = local if local else ""
 
+    # 🔍 VERIFICAR EVENTOS EXISTENTES NO MESMO HORÁRIO
+    eventos_conflitantes = db.query(Event).filter(
+        Event.user_id == user.id,
+        Event.data_inicio <= data_evento,
+        Event.data_fim >= data_evento
+    ).all()
+
+    # 🎯 CRIAR EVENTO NOVO DIRETO - SEM BLOQUEAR
     novo = Event(
         user_id=user.id,
         titulo=titulo,
@@ -209,11 +217,25 @@ async def criar_evento(parametros: dict, user: User, db: Session):
         print(f"Erro ao adicionar pontos (evento): {e}")
 
     data_fmt = data_evento.strftime('%d/%m/%Y às %H:%M')
+    mensagem_base = f"Perfeito! Evento '{titulo}' agendado para {data_fmt}" + (f" em {local}" if local else "")
+    
+    # 📢 ADICIONAR AVISO SOBRE EVENTOS EXISTENTES
+    if eventos_conflitantes:
+        eventos_nomes = [f"'{e.titulo}'" for e in eventos_conflitantes]
+        if len(eventos_nomes) == 1:
+            aviso = f" ⚠️ Aviso: Você já tinha {eventos_nomes[0]} nesse mesmo horário, mas mantive ambos os eventos."
+        else:
+            aviso = f" ⚠️ Aviso: Você já tinha {', '.join(eventos_nomes[:-1])} e {eventos_nomes[-1]} nesse mesmo horário, mas mantive todos os eventos."
+        mensagem_final = mensagem_base + aviso
+    else:
+        mensagem_final = mensagem_base
+    
     return {
         "sucesso": True,
-        "mensagem": f"Evento '{titulo}' criado para {data_fmt}" + (f" em {local}" if local else ""),
+        "mensagem": mensagem_final,
         "id": novo.id,
-        "data_evento": str(data_evento)
+        "data_evento": str(data_evento),
+        "conflito": len(eventos_conflitantes) > 0
     }
 
 async def criar_financa(parametros: dict, user: User, db: Session):
@@ -290,12 +312,11 @@ Responda sempre em português brasileiro de forma curta e informal.
 {contexto}
 
 REGRAS IMPORTANTES:
-- NUNCA peça confirmação. Execute SEMPRE imediatamente.
-- OBRIGATÓRIO: Use a tag [ACAO] para TODA ação solicitada. Resposta SEM tag [ACAO] quando uma ação for pedida = ERRO GRAVE.
-- NUNCA responda apenas com texto quando o usuário pedir para criar, adicionar, registrar ou marcar algo.
-- Responda em no máximo 2 frases APÓS a tag [ACAO].
-- CONFLITO DE AGENDA: Se já houver evento no mesmo dia E horário, avise: "Você já tem [evento] nesse horário! Criando mesmo assim..."
-- Se houver evento no mesmo DIA mas horário diferente, informe: "Criado! Lembrando que você já tem [evento] às [hora] nesse dia."
+- **NUNCA VERIFIQUE CONFLITOS** - Sempre agende diretamente
+- **OBRIGATÓRIO**: Use a tag [ACAO] para TODA ação solicitada
+- **NUNCA responda apenas com texto** quando o usuário pedir para criar algo
+- **NUNCA mencione outros eventos** ou horários existentes
+- **SEMPRE CRIE** o evento solicitado, sem exceções
 
 AÇÕES DISPONÍVEIS:
 
@@ -319,6 +340,8 @@ Exemplos:
 - "Academia hoje às 7h" → [ACAO]create_event|titulo:Academia|data:hoje|hora:07:00|local:[/ACAO]
 - "Viagem dia 10 de julho" → [ACAO]create_event|titulo:Viagem|data:10 de julho|hora:12:00|local:[/ACAO]
 
+**REGRA FINAL: SEMPRE CRIE O EVENTO, SEM VERIFICAR NADA!**
+
 2. REGISTRAR FINANÇA:
 [ACAO]create_finance|valor:VALOR|tipo:gasto_ou_receita|categoria:CATEGORIA|descricao:DESCRICAO[/ACAO]
 
@@ -334,7 +357,7 @@ Exemplos:
 - "entrou 20 reais" → [ACAO]create_finance|valor:20|tipo:receita|categoria:Receita|descricao:Entrada[/ACAO]
 - "recebi 1000 de salário" → [ACAO]create_finance|valor:1000|tipo:receita|categoria:Salário|descricao:Salário mensal[/ACAO]
 - "caiu 500 na conta" → [ACAO]create_finance|valor:500|tipo:receita|categoria:Receita|descricao:Entrada[/ACAO]
-- "ganhei 300 de freela" → [ACAO]create_finance|valor:300|tipo:receita|categoria:Freelance|descricao:Freelance[/ACAO]
+- "ganhei 300 de freela" → [ACAO]create_habit|nome:Beber água|frequencia:diario[/ACAO]
 - "ganhei 200 reais da Batistella Projetos" → [ACAO]create_finance|valor:200|tipo:receita|categoria:Freelance|descricao:Batistella Projetos[/ACAO]
 
 3. CRIAR HÁBITO:
@@ -373,6 +396,34 @@ Exemplos:
         acoes = re.findall(r'\[ACAO\](.*?)\[/ACAO\]', resposta, re.DOTALL)
         mensagens_sucesso = []
         acao_executada = None
+
+        # 🔍 VERIFICAR SE HÁ CONFLITO NA RESPOSTA DA IA (mesmo sem [ACAO])
+        if "conflito" in resposta.lower() or "deseja confirmar" in resposta.lower():
+            # Extrair dados do conflito da resposta
+            conflito_match = re.search(r'já tem [\'"]([^\'"]+)[\'"] às (\d{2}:\d{2})', resposta, re.IGNORECASE)
+            if conflito_match:
+                titulo_conflito = conflito_match.group(1)
+                hora_conflito = conflito_match.group(2)
+                
+                # Tentar extrair dados do evento solicitado
+                evento_match = re.search(r'criar ([\'"]?[^\'"]+[\'"]?)', resposta, re.IGNORECASE)
+                titulo_solicitado = evento_match.group(1).replace("'", '"').strip('"') if evento_match else "Evento"
+                
+                # Criar dados pendentes simulados
+                acao_executada = {
+                    "sucesso": False,
+                    "conflito": True,
+                    "evento_conflito": {
+                        "titulo": titulo_conflito,
+                        "hora": hora_conflito
+                    },
+                    "dados_pendentes": {
+                        "titulo": titulo_solicitado,
+                        "data": "hoje",
+                        "hora": hora_conflito,  # Assumindo mesmo horário para simplificar
+                        "local": ""
+                    }
+                }
 
         for acao_content in acoes:
             partes = acao_content.split('|')

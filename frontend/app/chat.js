@@ -25,6 +25,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState(null);
   const flatListRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
@@ -97,6 +98,8 @@ export default function ChatScreen() {
       setLoading(true);
       const res = await transcribeAudio(uri);
       const { texto_transcrito, resposta } = res.data;
+      
+      // FLUXO SIMPLES - Sem verificação de conflito
       setMessages(prev => [...prev,
         { id: Date.now().toString(), role: 'user', content: `🎤 ${texto_transcrito}`, time: getTime() },
         { id: (Date.now() + 1).toString(), role: 'ai', content: resposta, time: getTime() }
@@ -111,8 +114,46 @@ export default function ChatScreen() {
     }
   };
 
+  const handleConfirmation = async (confirm) => {
+    if (!pendingConfirmation) return;
+    
+    setLoading(true);
+    try {
+      if (confirm) {
+        // Criar evento com forcar:true
+        const dados = pendingConfirmation.dados_pendentes;
+        const res = await sendMessage({ 
+          mensagem: `SIM - Criar evento: ${dados.titulo} em ${dados.data} às ${dados.hora} ${dados.local ? `em ${dados.local}` : ''}` 
+        });
+        
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'ai', 
+          content: `✅ Confirmado! Evento '${dados.titulo}' criado para ${dados.data} às ${dados.hora}${dados.local ? ` em ${dados.local}` : ''}`, 
+          time: getTime() 
+        }]);
+      } else {
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'ai', 
+          content: 'Ok, evento cancelado.', 
+          time: getTime() 
+        }]);
+      }
+    } catch (err) {
+      console.log('Erro ao confirmar:', err);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: '❌ Erro ao processar confirmação. Tente novamente!', time: getTime() }]);
+    } finally {
+      setPendingConfirmation(null);
+      setLoading(false);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  };
+
   const renderMessage = ({ item }) => {
     const isUser = item.role === 'user';
+    const hasConfirmation = item.hasConfirmation && pendingConfirmation;
+    
     return (
       <View style={[styles.messageRow, isUser && styles.messageRowUser]}>
         {!isUser && (
@@ -123,6 +164,25 @@ export default function ChatScreen() {
         <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAI]}>
           <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{item.content}</Text>
           <Text style={[styles.bubbleTime, isUser && styles.bubbleTimeUser]}>{item.time}</Text>
+          
+          {hasConfirmation && (
+            <View style={styles.confirmationButtons}>
+              <TouchableOpacity 
+                style={[styles.confirmBtn, styles.confirmBtnNo]} 
+                onPress={() => handleConfirmation(false)}
+                disabled={loading}
+              >
+                <Text style={styles.confirmBtnTextNo}>NÃO</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmBtn, styles.confirmBtnYes]} 
+                onPress={() => handleConfirmation(true)}
+                disabled={loading}
+              >
+                <Text style={styles.confirmBtnTextYes}>SIM</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         {isUser && (
           <View style={styles.avatarUser}>
@@ -210,6 +270,39 @@ export default function ChatScreen() {
     },
     micBtn: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
     micBtnRecording: { backgroundColor: Colors.danger },
+    confirmationButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },
+    confirmBtn: { 
+      flex: 1, 
+      paddingVertical: 8, 
+      paddingHorizontal: 16, 
+      borderRadius: 12, 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      minWidth: 60
+    },
+    confirmBtnYes: { 
+      backgroundColor: Colors.primary,
+      shadowColor: Colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    confirmBtnNo: { 
+      backgroundColor: Colors.surfaceLight,
+      borderWidth: 1,
+      borderColor: Colors.border,
+    },
+    confirmBtnTextYes: { 
+      color: Colors.white, 
+      fontSize: 14, 
+      fontWeight: '600' 
+    },
+    confirmBtnTextNo: { 
+      color: Colors.textMuted, 
+      fontSize: 14, 
+      fontWeight: '600' 
+    },
   });
 
   const hasInput = input.trim().length > 0;

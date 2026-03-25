@@ -237,7 +237,7 @@ function VoiceModal({ visible, onClose }) {
   );
 }
 
-function MainTabs({ onVoicePress }) {
+function MainTabs({ onVoicePress, onLogout }) {
   const Colors = useColors(); // ✅ hook aqui dentro
   const scheme = useColorScheme();
 
@@ -271,7 +271,9 @@ function MainTabs({ onVoicePress }) {
         },
       })}
     >
-      <Tab.Screen name="Painel" component={DashboardScreen} />
+      <Tab.Screen name="Painel">
+        {(props) => <DashboardScreen {...props} onLogout={onLogout} />}
+      </Tab.Screen>
       <Tab.Screen name="Agenda" component={AgendaScreen} />
       <Tab.Screen
         name="Voz"
@@ -342,7 +344,10 @@ export default function App() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {isLoggedIn ? (
         <NavigationContainer>
-          <MainTabs onVoicePress={() => setVoiceVisible(true)} />
+          <MainTabs 
+            onVoicePress={() => setVoiceVisible(true)} 
+            onLogout={() => setIsLoggedIn(false)} 
+          />
           <VoiceModal
             visible={voiceVisible}
             onClose={() => setVoiceVisible(false)}

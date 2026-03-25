@@ -14,7 +14,6 @@ from .ai_agent import AIAgent
 from .tech_lead_agent import TechLeadAgent
 from .sales_agent import SalesAgent
 from .devops_agent import DevOpsAgent
-from .qa_agent import QAAgent
 
 class AgentRouter:
     def __init__(self):
@@ -26,8 +25,7 @@ class AgentRouter:
             "ai": AIAgent(),
             "techlead": TechLeadAgent(),
             "sales": SalesAgent(),
-            "devops": DevOpsAgent(),
-            "qa": QAAgent()
+            "devops": DevOpsAgent()
         }
         self.default_agent = "techlead"  # Agente padrão para mensagens gerais
         

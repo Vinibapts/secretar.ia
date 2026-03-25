@@ -19,6 +19,7 @@ const light = {
   white: '#FFFFFF',
 };
 
+// Mantendo dark apenas para referência, mas não será usado
 const dark = {
   background: '#0F1420',
   surface: '#1A2233',
@@ -39,6 +40,8 @@ const dark = {
 };
 
 export function useColors() {
-  const scheme = useColorScheme();
-  return scheme === 'dark' ? dark : light;
+  // APP SEMPRE EM MODO CLARO - FIXO
+  return light;
 }
+
+export { light, dark };

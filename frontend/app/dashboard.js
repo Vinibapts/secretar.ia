@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../constants/colors';
 import { getEvents, getResumo } from '../services/api';
 
-export default function DashboardScreen({ navigation }) {
+export default function DashboardScreen({ navigation, onLogout }) {
   const Colors = useColors();
 
   const [events, setEvents] = useState([]);
@@ -38,7 +38,7 @@ export default function DashboardScreen({ navigation }) {
         getEvents(),
         getResumo(),
       ]);
-      setEvents(eventsRes.data.slice(0, 3));
+      setEvents(eventsRes.data);
       setResumo(resumoRes.data);
     } catch (err) {
       console.log('Erro ao carregar dados:', err);
@@ -50,10 +50,11 @@ export default function DashboardScreen({ navigation }) {
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('keepConnected');
+    onLogout?.();
   };
 
   const statCards = [
-    { label: 'Eventos hoje', value: String(events.length), icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
+    { label: 'Eventos hoje', value: String(events.filter(e => new Date(e.data_inicio).toDateString() === new Date().toDateString()).length), icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
     { label: 'Saldo do mês', value: `R$ ${resumo.saldo.toFixed(0)}`, icon: 'wallet', color: Colors.warning, bg: Colors.warningLight },
     { label: 'Receitas', value: `R$ ${resumo.total_receitas.toFixed(0)}`, icon: 'trending-up', color: Colors.success, bg: Colors.successLight },
     { label: 'Gastos', value: `R$ ${resumo.total_gastos.toFixed(0)}`, icon: 'trending-down', color: Colors.danger, bg: Colors.dangerLight },
@@ -120,6 +121,21 @@ export default function DashboardScreen({ navigation }) {
     },
     emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 10, fontWeight: '600' },
     emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4, opacity: 0.7 },
+    themeButtons: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+    themeButton: {
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
+      backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    },
+    themeButtonActive: {
+      backgroundColor: Colors.primary, borderColor: Colors.primary,
+    },
+    themeButtonText: {
+      fontSize: 12, fontWeight: '600', color: Colors.textMuted, marginLeft: 8
+    },
+    themeButtonTextActive: {
+      color: Colors.white,
+    },
   });
 
   if (loading) {
@@ -188,7 +204,7 @@ export default function DashboardScreen({ navigation }) {
               <Text style={styles.emptySubtext}>Use o botão de voz para criar compromissos</Text>
             </View>
           ) : (
-            events.map((evt, i) => (
+            events.slice(0, 5).map((evt, i) => (
               <View key={i} style={styles.eventCard}>
                 <View style={styles.eventTimeBox}>
                   <Text style={styles.eventTimeText}>
