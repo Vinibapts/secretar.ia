@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Modal, TextInput,
   Alert, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
+import { useColors } from '../constants/colors';
 import { getFinances, createFinance, deleteFinance, getResumo } from '../services/api';
 
 export default function FinancesScreen() {
+  const Colors = useColors();
+
   const [finances, setFinances] = useState([]);
   const [resumo, setResumo] = useState({ total_receitas: 0, total_gastos: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
@@ -19,9 +22,11 @@ export default function FinancesScreen() {
   const [descricao, setDescricao] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     try {
@@ -64,19 +69,13 @@ export default function FinancesScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir', style: 'destructive',
-        onPress: async () => {
-          await deleteFinance(id);
-          loadData();
-        }
+        onPress: async () => { await deleteFinance(id); loadData(); }
       }
     ]);
   };
 
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: 'short'
-    });
-  };
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 
   const getCategoryIcon = (categoria) => {
     const icons = {
@@ -91,9 +90,109 @@ export default function FinancesScreen() {
     return icons[categoria?.toLowerCase()] || 'ellipse-outline';
   };
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between',
+      alignItems: 'flex-start', padding: 20, paddingBottom: 12,
+      backgroundColor: Colors.surface,
+      borderBottomWidth: 1, borderBottomColor: Colors.border,
+    },
+    title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
+    subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
+    addBtn: {
+      width: 44, height: 44, borderRadius: 14,
+      backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+      shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
+    },
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    scroll: { padding: 20, paddingBottom: 40 },
+    summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+    summaryCard: {
+      flex: 1, backgroundColor: Colors.surface, borderRadius: 18, padding: 16,
+      borderTopWidth: 3,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    },
+    summaryIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+    summaryLabel: { fontSize: 12, color: Colors.textMuted, marginBottom: 4 },
+    summaryValue: { fontSize: 18, fontWeight: 'bold' },
+    saldoCard: {
+      backgroundColor: Colors.surface, borderRadius: 18, padding: 18,
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: 24,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    },
+    saldoLabel: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
+    saldoValue: { fontSize: 26, fontWeight: 'bold', marginTop: 4 },
+    saldoIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
+    emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+    emptyIcon: {
+      width: 80, height: 80, borderRadius: 24,
+      backgroundColor: Colors.warningLight,
+      alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+    },
+    emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
+    emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6 },
+    transactionCard: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.surface, borderRadius: 18, padding: 14, marginBottom: 10,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    },
+    transactionIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    transactionContent: { flex: 1 },
+    transactionTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
+    transactionDate: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+    transactionRight: { alignItems: 'flex-end', gap: 6 },
+    transactionValue: { fontSize: 15, fontWeight: '700' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalCard: {
+      backgroundColor: Colors.surface, borderTopLeftRadius: 28,
+      borderTopRightRadius: 28, padding: 24, paddingTop: 12,
+    },
+    modalHandle: {
+      width: 40, height: 4, borderRadius: 2,
+      backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16,
+    },
+    modalHeader: {
+      flexDirection: 'row', justifyContent: 'space-between',
+      alignItems: 'center', marginBottom: 20,
+    },
+    modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
+    closeBtn: {
+      width: 32, height: 32, borderRadius: 10,
+      backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center',
+    },
+    label: { fontSize: 13, color: Colors.text, fontWeight: '600', marginBottom: 6, marginTop: 14 },
+    input: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 14,
+      paddingHorizontal: 14, paddingVertical: 13,
+      color: Colors.text, fontSize: 15,
+    },
+    tipoRow: { flexDirection: 'row', gap: 10 },
+    tipoBtn: {
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 6, paddingVertical: 13, borderRadius: 14,
+      borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.surface,
+    },
+    tipoBtnGasto: { backgroundColor: Colors.danger, borderColor: Colors.danger },
+    tipoBtnReceita: { backgroundColor: Colors.success, borderColor: Colors.success },
+    tipoBtnText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
+    saveBtn: {
+      backgroundColor: Colors.primary, borderRadius: 14,
+      padding: 16, alignItems: 'center', marginTop: 24,
+      shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
+    },
+    saveBtnText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
+  });
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Finanças</Text>
@@ -110,8 +209,6 @@ export default function FinancesScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-          {/* Resumo cards */}
           <View style={styles.summaryRow}>
             <View style={[styles.summaryCard, { borderTopColor: Colors.success }]}>
               <View style={[styles.summaryIcon, { backgroundColor: Colors.successLight }]}>
@@ -133,7 +230,6 @@ export default function FinancesScreen() {
             </View>
           </View>
 
-          {/* Saldo */}
           <View style={styles.saldoCard}>
             <View>
               <Text style={styles.saldoLabel}>Saldo atual</Text>
@@ -154,7 +250,6 @@ export default function FinancesScreen() {
             </View>
           </View>
 
-          {/* Transações */}
           <Text style={styles.sectionTitle}>Transações recentes</Text>
 
           {finances.length === 0 ? (
@@ -199,7 +294,6 @@ export default function FinancesScreen() {
         </ScrollView>
       )}
 
-      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -258,11 +352,7 @@ export default function FinancesScreen() {
             />
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.saveBtnText}>Salvar</Text>
-              )}
+              {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -270,105 +360,3 @@ export default function FinancesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', padding: 20, paddingBottom: 12,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
-  addBtn: {
-    width: 44, height: 44, borderRadius: 14,
-    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-  },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: 20, paddingBottom: 40 },
-  summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  summaryCard: {
-    flex: 1, backgroundColor: Colors.white, borderRadius: 18, padding: 16,
-    borderTopWidth: 3,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
-  },
-  summaryIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  summaryLabel: { fontSize: 12, color: Colors.textMuted, marginBottom: 4 },
-  summaryValue: { fontSize: 18, fontWeight: 'bold' },
-  saldoCard: {
-    backgroundColor: Colors.white, borderRadius: 18, padding: 18,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
-  },
-  saldoLabel: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
-  saldoValue: { fontSize: 26, fontWeight: 'bold', marginTop: 4 },
-  saldoIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  emptyIcon: {
-    width: 80, height: 80, borderRadius: 24,
-    backgroundColor: Colors.warningLight,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
-  emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6 },
-  transactionCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: 18, padding: 14, marginBottom: 10,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
-  },
-  transactionIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  transactionContent: { flex: 1 },
-  transactionTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  transactionDate: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  transactionRight: { alignItems: 'flex-end', gap: 6 },
-  transactionValue: { fontSize: 15, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: {
-    backgroundColor: Colors.white, borderTopLeftRadius: 28,
-    borderTopRightRadius: 28, padding: 24, paddingTop: 12,
-  },
-  modalHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 20,
-  },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
-  closeBtn: {
-    width: 32, height: 32, borderRadius: 10,
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  label: { fontSize: 13, color: Colors.text, fontWeight: '600', marginBottom: 6, marginTop: 14 },
-  input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 13,
-    color: Colors.text, fontSize: 15,
-  },
-  tipoRow: { flexDirection: 'row', gap: 10 },
-  tipoBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 13, borderRadius: 14,
-    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white,
-  },
-  tipoBtnGasto: { backgroundColor: Colors.danger, borderColor: Colors.danger },
-  tipoBtnReceita: { backgroundColor: Colors.success, borderColor: Colors.success },
-  tipoBtnText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
-  saveBtn: {
-    backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 16, alignItems: 'center', marginTop: 24,
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-  },
-  saveBtnText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
-});

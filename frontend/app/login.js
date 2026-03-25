@@ -6,10 +6,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../constants/colors';
+import { useColors } from '../constants/colors';
 import { login, register } from '../services/api';
 
 export default function LoginScreen({ onLogin }) {
+  const Colors = useColors();
+
   const [isLogin, setIsLogin] = useState(true);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -72,13 +74,63 @@ export default function LoginScreen({ onLogin }) {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+    logoContainer: { alignItems: 'center', marginBottom: 32 },
+    logoIcon: {
+      width: 72, height: 72, borderRadius: 22,
+      backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
+      marginBottom: 16, shadowColor: Colors.primary,
+      shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15,
+      shadowRadius: 20, elevation: 8,
+    },
+    logoText: { fontSize: 32, fontWeight: 'bold', color: Colors.text, letterSpacing: -0.5 },
+    logoAccent: { color: Colors.primary },
+    logoSubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6, textAlign: 'center' },
+    card: {
+      backgroundColor: Colors.surface, borderRadius: 24, padding: 24,
+      shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08, shadowRadius: 20, elevation: 4,
+    },
+    cardTitle: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 24, textAlign: 'center' },
+    inputGroup: { marginBottom: 16 },
+    label: { fontSize: 13, color: Colors.text, fontWeight: '500', marginBottom: 6 },
+    inputWrapper: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: Colors.surfaceLight, borderRadius: 14,
+      paddingHorizontal: 14, height: 50,
+    },
+    inputIcon: { marginRight: 10 },
+    input: { flex: 1, color: Colors.text, fontSize: 15 },
+    keepConnected: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+    checkbox: {
+      width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
+      borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: Colors.surface,
+    },
+    checkboxActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    keepConnectedText: { fontSize: 13, color: Colors.textMuted },
+    button: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: Colors.primary, borderRadius: 14, height: 52, gap: 8,
+      shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    },
+    buttonText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+    footerText: { color: Colors.textMuted, fontSize: 14 },
+    footerLink: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
+    poweredBy: { textAlign: 'center', color: Colors.textMuted, fontSize: 12, marginTop: 24, opacity: 0.6 },
+    poweredByAccent: { color: Colors.primary, fontWeight: '600' },
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.inner}
       >
-        {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
             <Ionicons name="sparkles" size={32} color={Colors.primary} />
@@ -91,7 +143,6 @@ export default function LoginScreen({ onLogin }) {
           </Text>
         </View>
 
-        {/* Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
             {isLogin ? 'Entrar na sua conta' : 'Criar sua conta'}
@@ -163,18 +214,12 @@ export default function LoginScreen({ onLogin }) {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
+          <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
             {loading ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
               <>
-                <Text style={styles.buttonText}>
-                  {isLogin ? 'Entrar' : 'Criar conta'}
-                </Text>
+                <Text style={styles.buttonText}>{isLogin ? 'Entrar' : 'Criar conta'}</Text>
                 <Ionicons name="arrow-forward" size={18} color={Colors.white} />
               </>
             )}
@@ -185,9 +230,7 @@ export default function LoginScreen({ onLogin }) {
               {isLogin ? 'Não tem conta? ' : 'Já tem conta? '}
             </Text>
             <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-              <Text style={styles.footerLink}>
-                {isLogin ? 'Criar conta' : 'Entrar'}
-              </Text>
+              <Text style={styles.footerLink}>{isLogin ? 'Criar conta' : 'Entrar'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -199,54 +242,3 @@ export default function LoginScreen({ onLogin }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  logoContainer: { alignItems: 'center', marginBottom: 32 },
-  logoIcon: {
-    width: 72, height: 72, borderRadius: 22,
-    backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'center',
-    marginBottom: 16, shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15,
-    shadowRadius: 20, elevation: 8,
-  },
-  logoText: { fontSize: 32, fontWeight: 'bold', color: Colors.text, letterSpacing: -0.5 },
-  logoAccent: { color: Colors.primary },
-  logoSubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6, textAlign: 'center' },
-  card: {
-    backgroundColor: Colors.white, borderRadius: 24, padding: 24,
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, shadowRadius: 20, elevation: 4,
-  },
-  cardTitle: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 24, textAlign: 'center' },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, color: Colors.text, fontWeight: '500', marginBottom: 6 },
-  inputWrapper: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surfaceLight, borderRadius: 14,
-    paddingHorizontal: 14, height: 50,
-  },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, color: Colors.text, fontSize: 15 },
-  keepConnected: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  checkbox: {
-    width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
-    borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.white,
-  },
-  checkboxActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  keepConnectedText: { fontSize: 13, color: Colors.textMuted },
-  button: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.primary, borderRadius: 14, height: 52, gap: 8,
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
-  },
-  buttonText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
-  footerText: { color: Colors.textMuted, fontSize: 14 },
-  footerLink: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
-  poweredBy: { textAlign: 'center', color: Colors.textMuted, fontSize: 12, marginTop: 24, opacity: 0.6 },
-  poweredByAccent: { color: Colors.primary, fontWeight: '600' },
-});

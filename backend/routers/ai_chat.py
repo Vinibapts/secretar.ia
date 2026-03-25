@@ -7,6 +7,7 @@ from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from routers.ranking import adicionar_pontos
 import httpx
 import os
 import re
@@ -202,6 +203,11 @@ async def criar_evento(parametros: dict, user: User, db: Session):
     db.add(notif)
     db.commit()
 
+    try:
+        adicionar_pontos(user.id, 10, "Criou evento pela IA", db)
+    except Exception as e:
+        print(f"Erro ao adicionar pontos (evento): {e}")
+
     data_fmt = data_evento.strftime('%d/%m/%Y às %H:%M')
     return {
         "sucesso": True,
@@ -236,6 +242,11 @@ async def criar_financa(parametros: dict, user: User, db: Session):
     db.commit()
     db.refresh(nova)
 
+    try:
+        adicionar_pontos(user.id, 5, "Registrou finança pela IA", db)
+    except Exception as e:
+        print(f"Erro ao adicionar pontos (finança): {e}")
+
     return {
         "sucesso": True,
         "mensagem": f"{'Receita' if tipo_str == 'receita' else 'Gasto'} de R$ {valor:.2f} registrado em {categoria}",
@@ -257,6 +268,11 @@ async def criar_habito(parametros: dict, user: User, db: Session):
     db.commit()
     db.refresh(novo)
 
+    try:
+        adicionar_pontos(user.id, 15, "Criou hábito pela IA", db)
+    except Exception as e:
+        print(f"Erro ao adicionar pontos (hábito): {e}")
+
     return {
         "sucesso": True,
         "mensagem": f"Hábito '{nome}' criado com frequência {frequencia}",
@@ -275,8 +291,9 @@ Responda sempre em português brasileiro de forma curta e informal.
 
 REGRAS IMPORTANTES:
 - NUNCA peça confirmação. Execute SEMPRE imediatamente.
-- Use a tag [ACAO] para executar ações.
-- Responda em no máximo 2 frases confirmando o que foi feito.
+- OBRIGATÓRIO: Use a tag [ACAO] para TODA ação solicitada. Resposta SEM tag [ACAO] quando uma ação for pedida = ERRO GRAVE.
+- NUNCA responda apenas com texto quando o usuário pedir para criar, adicionar, registrar ou marcar algo.
+- Responda em no máximo 2 frases APÓS a tag [ACAO].
 - CONFLITO DE AGENDA: Se já houver evento no mesmo dia E horário, avise: "Você já tem [evento] nesse horário! Criando mesmo assim..."
 - Se houver evento no mesmo DIA mas horário diferente, informe: "Criado! Lembrando que você já tem [evento] às [hora] nesse dia."
 
@@ -306,7 +323,7 @@ Exemplos:
 [ACAO]create_finance|valor:VALOR|tipo:gasto_ou_receita|categoria:CATEGORIA|descricao:DESCRICAO[/ACAO]
 
 Palavras que indicam GASTO: gastei, paguei, comprei, custou, saiu, torrei, acabei gastando, fui no mercado, comi fora
-Palavras que indicam RECEITA: recebi, entrou, ganhei, caiu na conta, faturei, me pagaram, caiu o salário
+Palavras que indicam RECEITA: recebi, entrou, ganhei, caiu na conta, faturei, me pagaram, caiu o salário, ganhei
 
 Categorias: Alimentação, Transporte, Saúde, Lazer, Vestuário, Moradia, Salário, Freelance, Receita, Geral
 
@@ -318,6 +335,7 @@ Exemplos:
 - "recebi 1000 de salário" → [ACAO]create_finance|valor:1000|tipo:receita|categoria:Salário|descricao:Salário mensal[/ACAO]
 - "caiu 500 na conta" → [ACAO]create_finance|valor:500|tipo:receita|categoria:Receita|descricao:Entrada[/ACAO]
 - "ganhei 300 de freela" → [ACAO]create_finance|valor:300|tipo:receita|categoria:Freelance|descricao:Freelance[/ACAO]
+- "ganhei 200 reais da Batistella Projetos" → [ACAO]create_finance|valor:200|tipo:receita|categoria:Freelance|descricao:Batistella Projetos[/ACAO]
 
 3. CRIAR HÁBITO:
 [ACAO]create_habit|nome:NOME|frequencia:diario_ou_semanal_ou_mensal[/ACAO]
@@ -338,9 +356,9 @@ Exemplos:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": texto}
                 ],
-                "model": "llama-3.1-8b-instant",
+                "model": "llama-3.3-70b-versatile",
                 "stream": False,
-                "temperature": 0.3
+                "temperature": 0.1
             },
             timeout=30.0
         )

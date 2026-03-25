@@ -6,10 +6,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../constants/colors';
+import { useColors } from '../constants/colors';
 import { getEvents, getResumo } from '../services/api';
 
 export default function DashboardScreen({ navigation }) {
+  const Colors = useColors();
+
   const [events, setEvents] = useState([]);
   const [resumo, setResumo] = useState({ total_receitas: 0, total_gastos: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
@@ -51,17 +53,74 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const statCards = [
-    { label: 'Eventos hoje', value: String(events.length), icon: 'calendar', color: '#3B82F6', bg: '#EFF6FF' },
-    { label: 'Saldo do mês', value: `R$ ${resumo.saldo.toFixed(0)}`, icon: 'wallet', color: '#F59E0B', bg: '#FFFBEB' },
-    { label: 'Receitas', value: `R$ ${resumo.total_receitas.toFixed(0)}`, icon: 'trending-up', color: '#10B981', bg: '#ECFDF5' },
-    { label: 'Gastos', value: `R$ ${resumo.total_gastos.toFixed(0)}`, icon: 'trending-down', color: '#EF4444', bg: '#FEF2F2' },
+    { label: 'Eventos hoje', value: String(events.length), icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
+    { label: 'Saldo do mês', value: `R$ ${resumo.saldo.toFixed(0)}`, icon: 'wallet', color: Colors.warning, bg: Colors.warningLight },
+    { label: 'Receitas', value: `R$ ${resumo.total_receitas.toFixed(0)}`, icon: 'trending-up', color: Colors.success, bg: Colors.successLight },
+    { label: 'Gastos', value: `R$ ${resumo.total_gastos.toFixed(0)}`, icon: 'trending-down', color: Colors.danger, bg: Colors.dangerLight },
   ];
 
   const shortcuts = [
-    { label: 'Agenda', icon: 'calendar', color: '#8B5CF6', bg: '#F5F3FF', tab: 'Agenda' },
-    { label: 'Finanças', icon: 'wallet', color: '#F59E0B', bg: '#FFFBEB', tab: 'Finanças' },
-    { label: 'Ranking', icon: 'trophy', color: '#3B82F6', bg: '#EFF6FF', tab: 'Ranking' },
+    { label: 'Agenda', icon: 'calendar', color: Colors.accent, bg: Colors.surfaceLight, tab: 'Agenda' },
+    { label: 'Finanças', icon: 'wallet', color: Colors.warning, bg: Colors.warningLight, tab: 'Finanças' },
+    { label: 'Ranking', icon: 'trophy', color: Colors.primary, bg: Colors.primaryLight, tab: 'Ranking' },
   ];
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    loadingContainer: { flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' },
+    scroll: { padding: 20, paddingBottom: 40 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+    greeting: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+    subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
+    logoutBtn: { padding: 8 },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
+    statCard: {
+      flex: 1, minWidth: '45%', backgroundColor: Colors.surface,
+      borderRadius: 20, padding: 16,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08, shadowRadius: 16, elevation: 3,
+    },
+    statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    statNumber: { fontSize: 22, fontWeight: 'bold', color: Colors.text },
+    statLabel: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+    section: { marginBottom: 24 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
+    sectionLink: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+    shortcuts: { flexDirection: 'row', gap: 10 },
+    shortcut: {
+      flex: 1, backgroundColor: Colors.surface, borderRadius: 18,
+      padding: 12, alignItems: 'center',
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    },
+    shortcutIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+    shortcutLabel: { fontSize: 11, color: Colors.text, fontWeight: '600' },
+    eventCard: {
+      flexDirection: 'row', alignItems: 'center', gap: 0,
+      backgroundColor: Colors.surface, borderRadius: 16,
+      marginBottom: 8, overflow: 'hidden',
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    },
+    eventTimeBox: {
+      width: 56, paddingVertical: 16,
+      alignItems: 'center', backgroundColor: Colors.primaryLight,
+    },
+    eventTimeText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+    eventBar: { width: 3, alignSelf: 'stretch', backgroundColor: Colors.primary },
+    eventContent: { flex: 1, padding: 12 },
+    eventTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
+    eventDate: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+    emptyCard: {
+      backgroundColor: Colors.surface, borderRadius: 20, padding: 32,
+      alignItems: 'center',
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    },
+    emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 10, fontWeight: '600' },
+    emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4, opacity: 0.7 },
+  });
 
   if (loading) {
     return (
@@ -75,18 +134,16 @@ export default function DashboardScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{hora}{nomeUsuario ? `, ${nomeUsuario}` : ''} 👋</Text>
-            <Text style={styles.subGreeting}>Aqui está o resumo do seu dia</Text>
+            <Text style={styles.subGreeting}>Aqui está o seu painel</Text>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
             <Ionicons name="log-out-outline" size={22} color={Colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* Stat Cards */}
         <View style={styles.statsGrid}>
           {statCards.map((card, i) => (
             <View key={i} style={styles.statCard}>
@@ -99,7 +156,6 @@ export default function DashboardScreen({ navigation }) {
           ))}
         </View>
 
-        {/* Shortcuts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Acesso rápido</Text>
           <View style={styles.shortcuts}>
@@ -118,7 +174,6 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Próximos compromissos */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Próximos compromissos</Text>
@@ -161,60 +216,3 @@ export default function DashboardScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  loadingContainer: { flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: 20, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
-  subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
-  logoutBtn: { padding: 8 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
-  statCard: {
-    flex: 1, minWidth: '45%', backgroundColor: Colors.white,
-    borderRadius: 20, padding: 16,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 16, elevation: 3,
-  },
-  statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  statNumber: { fontSize: 22, fontWeight: 'bold', color: Colors.text },
-  statLabel: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  section: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-  sectionLink: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  shortcuts: { flexDirection: 'row', gap: 10 },
-  shortcut: {
-    flex: 1, backgroundColor: Colors.white, borderRadius: 18,
-    padding: 12, alignItems: 'center',
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
-  },
-  shortcutIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  shortcutLabel: { fontSize: 11, color: Colors.text, fontWeight: '600' },
-  eventCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 0,
-    backgroundColor: Colors.white, borderRadius: 16,
-    marginBottom: 8, overflow: 'hidden',
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
-  },
-  eventTimeBox: {
-    width: 56, paddingVertical: 16,
-    alignItems: 'center', backgroundColor: Colors.primaryLight,
-  },
-  eventTimeText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
-  eventBar: { width: 3, alignSelf: 'stretch', backgroundColor: Colors.primary },
-  eventContent: { flex: 1, padding: 12 },
-  eventTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  eventDate: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  emptyCard: {
-    backgroundColor: Colors.white, borderRadius: 20, padding: 32,
-    alignItems: 'center',
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
-  },
-  emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 10, fontWeight: '600' },
-  emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4, opacity: 0.7 },
-});

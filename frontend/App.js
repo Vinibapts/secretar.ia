@@ -3,12 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
 import { View, Modal, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioRecorder, AudioModule, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import * as Speech from 'expo-speech';
-import { Colors } from './constants/colors';
+import { useColors } from './constants/colors';
 import LoginScreen from './app/login';
 import DashboardScreen from './app/dashboard';
 import AgendaScreen from './app/agenda';
@@ -19,6 +20,7 @@ import { transcribeAudio } from './services/api';
 const Tab = createBottomTabNavigator();
 
 function VoiceModal({ visible, onClose }) {
+  const Colors = useColors(); // ✅ hook aqui dentro
   const [status, setStatus] = useState('idle');
   const [response, setResponse] = useState('');
   const [voiceId, setVoiceId] = useState(null);
@@ -27,64 +29,36 @@ function VoiceModal({ visible, onClose }) {
   const pulseLoop = useRef(null);
 
   useEffect(() => {
-    // Descobre as vozes pt-BR disponíveis e escolhe a melhor
     Speech.getAvailableVoicesAsync().then(voices => {
       const ptVoices = voices.filter(v => v.language === 'pt-BR' || v.language === 'pt_BR');
-      console.log('Vozes pt-BR disponíveis:', JSON.stringify(ptVoices));
-
-      // Prioridade: Siri Voz 2 > Siri Voz 1 > Luciana > qualquer pt-BR
       const prioridade = [
         'com.apple.voice.enhanced.pt-BR.Luciana',
         'com.apple.ttsbundle.Luciana-premium',
         'com.apple.ttsbundle.siri_female_pt-BR_compact',
         'com.apple.ttsbundle.Luciana-compact',
       ];
-
       let voiceEscolhida = null;
       for (const id of prioridade) {
         const encontrada = ptVoices.find(v => v.identifier === id);
-        if (encontrada) {
-          voiceEscolhida = id;
-          break;
-        }
+        if (encontrada) { voiceEscolhida = id; break; }
       }
-
-      // Se nenhuma da lista, pega a primeira pt-BR disponível
-      if (!voiceEscolhida && ptVoices.length > 0) {
-        voiceEscolhida = ptVoices[0].identifier;
-      }
-
+      if (!voiceEscolhida && ptVoices.length > 0) voiceEscolhida = ptVoices[0].identifier;
       console.log('Voz escolhida:', voiceEscolhida);
       setVoiceId(voiceEscolhida);
     });
   }, []);
 
   useEffect(() => {
-    if (visible) {
-      setStatus('idle');
-      setResponse('');
-      iniciarGravacao();
-    } else {
-      pararTudo();
-    }
+    if (visible) { setStatus('idle'); setResponse(''); iniciarGravacao(); }
+    else { pararTudo(); }
   }, [visible]);
 
   useEffect(() => {
     if (status === 'recording') {
       pulseLoop.current = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.18,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim, { toValue: 1.18, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ])
       );
       pulseLoop.current.start();
@@ -119,35 +93,24 @@ function VoiceModal({ visible, onClose }) {
       await audioRecorder.stop();
       const uri = audioRecorder.uri;
       if (!uri) { onClose(); return; }
-
       const res = await transcribeAudio(uri);
       const { resposta } = res.data;
       setResponse(resposta);
       setStatus('speaking');
-
       const textoLimpo = resposta
         .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
         .replace(/[✅⚠️❌🎤]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
-
       await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
-
       const speechOptions = {
-        language: 'pt-BR',
-        pitch: 1.05,
-        rate: 0.92,
+        language: 'pt-BR', pitch: 1.05, rate: 0.92,
         onDone: () => setTimeout(() => onClose(), 800),
         onStopped: () => onClose(),
         onError: () => onClose(),
       };
-
-      if (voiceId) {
-        speechOptions.voice = voiceId;
-      }
-
+      if (voiceId) speechOptions.voice = voiceId;
       Speech.speak(textoLimpo, speechOptions);
-
     } catch (err) {
       console.log('Erro ao processar:', err);
       setStatus('idle');
@@ -156,12 +119,8 @@ function VoiceModal({ visible, onClose }) {
   };
 
   const handlePress = async () => {
-    if (status === 'recording') {
-      await pararGravacao();
-    } else if (status === 'speaking') {
-      Speech.stop();
-      onClose();
-    }
+    if (status === 'recording') await pararGravacao();
+    else if (status === 'speaking') { Speech.stop(); onClose(); }
   };
 
   const getIcon = () => {
@@ -187,19 +146,57 @@ function VoiceModal({ visible, onClose }) {
 
   const color = getColor();
 
+  const modalStyles = StyleSheet.create({
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: Colors.surface,
+      borderTopLeftRadius: 32, borderTopRightRadius: 32,
+      paddingBottom: 48, paddingTop: 16, paddingHorizontal: 24,
+      alignItems: 'center', gap: 16,
+    },
+    handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, marginBottom: 8 },
+    aiIcon: {
+      width: 48, height: 48, borderRadius: 16,
+      backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center',
+    },
+    aiTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
+    pulseRing: { width: 190, height: 190, borderRadius: 95, alignItems: 'center', justifyContent: 'center', marginVertical: 8 },
+    outerRing: { width: 168, height: 168, borderRadius: 84, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+    middleRing: { width: 142, height: 142, borderRadius: 71, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    micButton: {
+      width: 116, height: 116, borderRadius: 58,
+      alignItems: 'center', justifyContent: 'center',
+      shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20,
+      elevation: 18, overflow: 'hidden',
+    },
+    micButtonShine: {
+      position: 'absolute', top: 8, left: 12,
+      width: 92, height: 48, borderRadius: 48,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+    },
+    micButtonDepth: {
+      position: 'absolute', bottom: 0, left: 0, right: 0, height: 30,
+      borderBottomLeftRadius: 58, borderBottomRightRadius: 58,
+      backgroundColor: 'rgba(0,0,0,0.12)',
+    },
+    statusLabel: { fontSize: 15, fontWeight: '600', color: Colors.textMuted },
+    responseBox: { backgroundColor: Colors.surfaceLight, borderRadius: 16, padding: 16, width: '100%' },
+    responseText: { fontSize: 15, color: Colors.text, lineHeight: 22, textAlign: 'center' },
+    cancelBtn: { paddingVertical: 12, paddingHorizontal: 32, borderRadius: 14, backgroundColor: Colors.surfaceLight },
+    cancelText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
+  });
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={modalStyles.overlay}>
         <View style={modalStyles.sheet}>
           <View style={modalStyles.handle} />
-
           <View style={modalStyles.aiIcon}>
             <Ionicons name="sparkles" size={22} color={Colors.primary} />
           </View>
           <Text style={modalStyles.aiTitle}>
             Secretar<Text style={{ color: Colors.primary }}>.IA</Text>
           </Text>
-
           <Animated.View style={[
             modalStyles.pulseRing,
             { backgroundColor: color + '12', transform: [{ scale: pulseAnim }] }
@@ -207,10 +204,7 @@ function VoiceModal({ visible, onClose }) {
             <View style={[modalStyles.outerRing, { borderColor: color + '35' }]}>
               <View style={[modalStyles.middleRing, { borderColor: color + '60' }]}>
                 <TouchableOpacity
-                  style={[modalStyles.micButton, {
-                    backgroundColor: color,
-                    shadowColor: color,
-                  }]}
+                  style={[modalStyles.micButton, { backgroundColor: color, shadowColor: color }]}
                   onPress={handlePress}
                   disabled={status === 'processing'}
                   activeOpacity={0.88}
@@ -226,15 +220,12 @@ function VoiceModal({ visible, onClose }) {
               </View>
             </View>
           </Animated.View>
-
           <Text style={modalStyles.statusLabel}>{getLabel()}</Text>
-
           {response ? (
             <View style={modalStyles.responseBox}>
               <Text style={modalStyles.responseText}>{response}</Text>
             </View>
           ) : null}
-
           {(status === 'recording' || status === 'idle') && (
             <TouchableOpacity style={modalStyles.cancelBtn} onPress={onClose}>
               <Text style={modalStyles.cancelText}>Cancelar</Text>
@@ -246,101 +237,17 @@ function VoiceModal({ visible, onClose }) {
   );
 }
 
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingBottom: 48,
-    paddingTop: 16,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    gap: 16,
-  },
-  handle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: '#E2EAF4', marginBottom: 8,
-  },
-  aiIcon: {
-    width: 48, height: 48, borderRadius: 16,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  aiTitle: {
-    fontSize: 20, fontWeight: 'bold', color: '#1A2233',
-  },
-  pulseRing: {
-    width: 190, height: 190, borderRadius: 95,
-    alignItems: 'center', justifyContent: 'center',
-    marginVertical: 8,
-  },
-  outerRing: {
-    width: 168, height: 168, borderRadius: 84,
-    borderWidth: 1.5,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  middleRing: {
-    width: 142, height: 142, borderRadius: 71,
-    borderWidth: 2,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  micButton: {
-    width: 116, height: 116, borderRadius: 58,
-    alignItems: 'center', justifyContent: 'center',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 18,
-    overflow: 'hidden',
-  },
-  micButtonShine: {
-    position: 'absolute',
-    top: 8, left: 12,
-    width: 92, height: 48,
-    borderRadius: 48,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  micButtonDepth: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: 30,
-    borderBottomLeftRadius: 58,
-    borderBottomRightRadius: 58,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
-  statusLabel: {
-    fontSize: 15, fontWeight: '600', color: '#7B8FA6',
-  },
-  responseBox: {
-    backgroundColor: '#F4F7FB',
-    borderRadius: 16, padding: 16,
-    width: '100%',
-  },
-  responseText: {
-    fontSize: 15, color: '#1A2233', lineHeight: 22, textAlign: 'center',
-  },
-  cancelBtn: {
-    paddingVertical: 12, paddingHorizontal: 32,
-    borderRadius: 14, backgroundColor: '#F4F7FB',
-  },
-  cancelText: {
-    fontSize: 14, fontWeight: '600', color: '#7B8FA6',
-  },
-});
-
 function MainTabs({ onVoicePress }) {
+  const Colors = useColors(); // ✅ hook aqui dentro
+  const scheme = useColorScheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E2EAF4',
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.border,
           borderTopWidth: 1,
           height: 80,
           paddingBottom: 16,
@@ -350,12 +257,12 @@ function MainTabs({ onVoicePress }) {
           shadowRadius: 12,
           elevation: 8,
         },
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#7B8FA6',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
         tabBarIcon: ({ focused, color }) => {
           const icons = {
-            Dashboard: focused ? 'home' : 'home-outline',
+            Painel: focused ? 'home' : 'home-outline',
             Agenda: focused ? 'calendar' : 'calendar-outline',
             Finanças: focused ? 'wallet' : 'wallet-outline',
             Ranking: focused ? 'trophy' : 'trophy-outline',
@@ -364,7 +271,7 @@ function MainTabs({ onVoicePress }) {
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen name="Painel" component={DashboardScreen} />
       <Tab.Screen name="Agenda" component={AgendaScreen} />
       <Tab.Screen
         name="Voz"
@@ -379,9 +286,7 @@ function MainTabs({ onVoicePress }) {
               marginBottom: 24,
               shadowColor: Colors.primary,
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.4,
-              shadowRadius: 10,
-              elevation: 10,
+              shadowOpacity: 0.4, shadowRadius: 10, elevation: 10,
               overflow: 'hidden',
             }}>
               <View style={{
@@ -404,6 +309,7 @@ function MainTabs({ onVoicePress }) {
 }
 
 export default function App() {
+  const scheme = useColorScheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -432,7 +338,8 @@ export default function App() {
 
   return (
     <>
-      <StatusBar style="dark" />
+      {/* ✅ StatusBar muda automaticamente com o tema */}
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {isLoggedIn ? (
         <NavigationContainer>
           <MainTabs onVoicePress={() => setVoiceVisible(true)} />

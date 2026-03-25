@@ -1,59 +1,216 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
-
-const niveis = [
-  { nome: 'Iniciante', icon: '🌱', min: 0, max: 99, color: Colors.success },
-  { nome: 'Aprendiz', icon: '⭐', min: 100, max: 499, color: Colors.warning },
-  { nome: 'Produtivo', icon: '🚀', min: 500, max: 1499, color: Colors.primary },
-  { nome: 'Expert', icon: '💎', min: 1500, max: 3999, color: Colors.accent },
-  { nome: 'Mestre', icon: '👑', min: 4000, max: 99999, color: '#F59E0B' },
-];
-
-const mockTop10 = [
-  { id: 1, nome: 'Vinícius', pontos: 0, streak: 0, nivel: 'Iniciante' },
-];
-
-const regras = [
-  { acao: 'Criar evento na agenda', pontos: '+10', icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
-  { acao: 'Concluir tarefa', pontos: '+15', icon: 'checkmark-circle', color: Colors.success, bg: Colors.successLight },
-  { acao: 'Marcar hábito do dia', pontos: '+20', icon: 'heart', color: Colors.danger, bg: Colors.dangerLight },
-  { acao: 'Registrar gasto/receita', pontos: '+5', icon: 'wallet', color: Colors.warning, bg: Colors.warningLight },
-  { acao: 'Usar o chat com IA', pontos: '+2', icon: 'chatbubble-ellipses', color: Colors.accent, bg: '#F5F3FF' },
-  { acao: 'Entrar no app', pontos: '+5', icon: 'phone-portrait', color: Colors.primary, bg: Colors.primaryLight },
-  { acao: 'Streak de 7 dias', pontos: '+50', icon: 'flame', color: '#F59E0B', bg: '#FFFBEB' },
-];
+import { useFocusEffect } from '@react-navigation/native';
+import { useColors } from '../constants/colors';
+import { getMeuRanking, getTopRanking } from '../services/api';
 
 export default function RankingScreen() {
-  const [loading, setLoading] = useState(false);
-  const [pontos, setPontos] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const Colors = useColors();
+
+  const niveis = [
+    { nome: 'Iniciante', icon: '🌱', min: 0, max: 99, color: Colors.success },
+    { nome: 'Aprendiz', icon: '⭐', min: 100, max: 499, color: Colors.warning },
+    { nome: 'Produtivo', icon: '🚀', min: 500, max: 1499, color: Colors.primary },
+    { nome: 'Expert', icon: '💎', min: 1500, max: 3999, color: Colors.accent },
+    { nome: 'Mestre', icon: '👑', min: 4000, max: 99999, color: '#F59E0B' },
+  ];
+
+  const regras = [
+    { acao: 'Criar evento na agenda', pontos: '+10', icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
+    { acao: 'Concluir tarefa', pontos: '+15', icon: 'checkmark-circle', color: Colors.success, bg: Colors.successLight },
+    { acao: 'Marcar hábito do dia', pontos: '+20', icon: 'heart', color: Colors.danger, bg: Colors.dangerLight },
+    { acao: 'Registrar gasto/receita', pontos: '+5', icon: 'wallet', color: Colors.warning, bg: Colors.warningLight },
+    { acao: 'Usar o chat com IA', pontos: '+2', icon: 'chatbubble-ellipses', color: Colors.accent, bg: Colors.surfaceLight },
+    { acao: 'Entrar no app', pontos: '+5', icon: 'phone-portrait', color: Colors.primary, bg: Colors.primaryLight },
+    { acao: 'Streak de 7 dias', pontos: '+50', icon: 'flame', color: '#F59E0B', bg: Colors.warningLight },
+  ];
+
+  const [loading, setLoading] = useState(true);
+  const [meuRanking, setMeuRanking] = useState(null);
+  const [top10, setTop10] = useState([]);
   const [activeTab, setActiveTab] = useState('ranking');
 
-  const getNivel = (pts) => {
-    return niveis.find(n => pts >= n.min && pts <= n.max) || niveis[0];
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  const loadData = async () => {
+    try {
+      const [meuRes, topRes] = await Promise.all([
+        getMeuRanking(),
+        getTopRanking(),
+      ]);
+      setMeuRanking(meuRes.data);
+      setTop10(topRes.data);
+    } catch (err) {
+      console.log('Erro ranking:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getProximoNivel = (pts) => {
-    const idx = niveis.findIndex(n => pts >= n.min && pts <= n.max);
-    return idx < niveis.length - 1 ? niveis[idx + 1] : null;
-  };
+  const getNivelConfig = (nomeNivel) =>
+    niveis.find(n => n.nome === nomeNivel) || niveis[0];
 
-  const nivel = getNivel(pontos);
-  const proximoNivel = getProximoNivel(pontos);
-  const progresso = proximoNivel
-    ? ((pontos - nivel.min) / (nivel.max - nivel.min)) * 100
-    : 100;
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between',
+      alignItems: 'flex-start', padding: 20, paddingBottom: 12,
+      backgroundColor: Colors.surface,
+      borderBottomWidth: 1, borderBottomColor: Colors.border,
+    },
+    title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
+    subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
+    positionBadge: {
+      backgroundColor: Colors.primaryLight, borderRadius: 12,
+      paddingHorizontal: 14, paddingVertical: 8,
+    },
+    positionText: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
+    tabs: {
+      flexDirection: 'row', backgroundColor: Colors.surface,
+      borderBottomWidth: 1, borderBottomColor: Colors.border,
+      paddingHorizontal: 20, gap: 8,
+    },
+    tab: {
+      paddingVertical: 12, paddingHorizontal: 16,
+      borderBottomWidth: 2, borderBottomColor: 'transparent',
+    },
+    tabActive: { borderBottomColor: Colors.primary },
+    tabText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
+    tabTextActive: { color: Colors.primary },
+    scroll: { padding: 20, paddingBottom: 40 },
+    userCard: {
+      backgroundColor: Colors.surface, borderRadius: 20, padding: 20, marginBottom: 24,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08, shadowRadius: 16, elevation: 3,
+    },
+    userCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+    avatarContainer: {
+      width: 52, height: 52, borderRadius: 16,
+      backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+      marginRight: 12,
+    },
+    avatarText: { fontSize: 22, fontWeight: 'bold', color: Colors.white },
+    userInfo: { flex: 1 },
+    userName: { fontSize: 17, fontWeight: 'bold', color: Colors.text },
+    nivelRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    nivelIcon: { fontSize: 14 },
+    nivelNome: { fontSize: 13, fontWeight: '600' },
+    streakContainer: { alignItems: 'center' },
+    streakEmoji: { fontSize: 22 },
+    streakNum: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
+    streakLabel: { fontSize: 11, color: Colors.textMuted },
+    pontosRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+    pontosCard: {
+      flex: 1, backgroundColor: Colors.surfaceLight,
+      borderRadius: 14, padding: 12, alignItems: 'center',
+    },
+    pontosNum: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+    pontosLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+    progressSection: { marginBottom: 14 },
+    progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    progressLabel: { fontSize: 12, color: Colors.textMuted, fontWeight: '500' },
+    progressValue: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+    progressBar: {
+      height: 8, backgroundColor: Colors.surfaceLight,
+      borderRadius: 4, overflow: 'hidden',
+    },
+    progressFill: { height: '100%', borderRadius: 4, minWidth: 8 },
+    historicoSection: { marginBottom: 14 },
+    historicoTitle: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: 8 },
+    historicoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+    historicoMotivo: { fontSize: 12, color: Colors.textMuted, flex: 1 },
+    historicoPontos: { fontSize: 12, fontWeight: '700', color: Colors.success },
+    warningRow: {
+      flexDirection: 'row', gap: 8, alignItems: 'flex-start',
+      backgroundColor: Colors.warningLight, borderRadius: 12, padding: 10,
+    },
+    warningText: { flex: 1, fontSize: 12, color: Colors.warning, fontWeight: '500' },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
+    rankCard: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 14, marginBottom: 8,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05, shadowRadius: 8, elevation: 1,
+    },
+    rankCardMe: {
+      borderWidth: 1.5, borderColor: Colors.primary,
+      backgroundColor: Colors.primaryLight,
+    },
+    rankPosition: { fontSize: 18, width: 32, textAlign: 'center' },
+    rankAvatar: {
+      width: 38, height: 38, borderRadius: 12,
+      backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center',
+    },
+    rankAvatarText: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
+    rankInfo: { flex: 1 },
+    rankName: { fontSize: 14, fontWeight: '600', color: Colors.text },
+    rankNivel: { fontSize: 12, color: Colors.textMuted },
+    rankPontos: { alignItems: 'flex-end' },
+    rankPontosNum: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
+    rankPontosLabel: { fontSize: 11, color: Colors.textMuted },
+    emptyRanking: {
+      backgroundColor: Colors.primaryLight, borderRadius: 16, padding: 16, marginTop: 8,
+    },
+    emptyRankingText: { fontSize: 14, color: Colors.primary, fontWeight: '500', textAlign: 'center' },
+    regrasTitulo: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
+    regraCard: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 14, marginBottom: 8,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
+    },
+    regraIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    regraAcao: { flex: 1, fontSize: 14, fontWeight: '500', color: Colors.text },
+    regraPontos: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+    regraPontosText: { fontSize: 14, fontWeight: '700' },
+    nivelCard: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 14, marginBottom: 8,
+      shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
+    },
+    nivelCardIcon: { fontSize: 24 },
+    nivelCardInfo: { flex: 1 },
+    nivelCardNome: { fontSize: 15, fontWeight: '700' },
+    nivelCardRange: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+    nivelAtualBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    nivelAtualText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+    streakRegra: {
+      backgroundColor: Colors.warningLight, borderRadius: 16, padding: 16, marginTop: 16,
+    },
+    streakRegraTitle: { fontSize: 15, fontWeight: '700', color: Colors.warning, marginBottom: 8 },
+    streakRegraText: { fontSize: 13, color: Colors.warning, lineHeight: 20 },
+  });
 
-  const posicao = mockTop10.findIndex(u => u.nome === 'Vinícius') + 1;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const nivel = getNivelConfig(meuRanking?.nivel || 'Iniciante');
+  const proximoNivel = niveis.find(n => n.nome === meuRanking?.proximo_nivel);
+  const progresso = meuRanking?.progresso_percentual || 0;
+  const pontos = meuRanking?.pontos_total || 0;
+  const pontosHoje = meuRanking?.pontos_hoje || 0;
+  const streak = meuRanking?.streak_dias || 0;
+  const posicao = meuRanking?.posicao_ranking || 1;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Ranking</Text>
@@ -64,7 +221,6 @@ export default function RankingScreen() {
         </View>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'ranking' && styles.tabActive]}
@@ -85,10 +241,8 @@ export default function RankingScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
         {activeTab === 'ranking' ? (
           <>
-            {/* Card do usuário */}
             <View style={styles.userCard}>
               <View style={styles.userCardTop}>
                 <View style={styles.avatarContainer}>
@@ -108,24 +262,26 @@ export default function RankingScreen() {
                 </View>
               </View>
 
-              {/* Pontos */}
               <View style={styles.pontosRow}>
                 <View style={styles.pontosCard}>
                   <Text style={styles.pontosNum}>{pontos}</Text>
                   <Text style={styles.pontosLabel}>pontos totais</Text>
                 </View>
                 <View style={styles.pontosCard}>
-                  <Text style={styles.pontosNum}>0</Text>
+                  <Text style={styles.pontosNum}>{pontosHoje}</Text>
                   <Text style={styles.pontosLabel}>pontos hoje</Text>
                 </View>
               </View>
 
-              {/* Barra de progresso */}
               {proximoNivel && (
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
-                    <Text style={styles.progressLabel}>Próximo nível: {proximoNivel.icon} {proximoNivel.nome}</Text>
-                    <Text style={styles.progressValue}>{pontos}/{nivel.max} pts</Text>
+                    <Text style={styles.progressLabel}>
+                      Próximo nível: {proximoNivel.icon} {proximoNivel.nome}
+                    </Text>
+                    <Text style={styles.progressValue}>
+                      {pontos}/{meuRanking?.pontos_proximo_nivel} pts
+                    </Text>
                   </View>
                   <View style={styles.progressBar}>
                     <View style={[styles.progressFill, {
@@ -136,7 +292,18 @@ export default function RankingScreen() {
                 </View>
               )}
 
-              {/* Aviso streak */}
+              {meuRanking?.historico_hoje?.length > 0 && (
+                <View style={styles.historicoSection}>
+                  <Text style={styles.historicoTitle}>Ações de hoje</Text>
+                  {meuRanking.historico_hoje.slice(0, 3).map((h, i) => (
+                    <View key={i} style={styles.historicoRow}>
+                      <Text style={styles.historicoMotivo}>{h.motivo}</Text>
+                      <Text style={styles.historicoPontos}>+{h.pontos}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               <View style={styles.warningRow}>
                 <Ionicons name="information-circle-outline" size={16} color={Colors.warning} />
                 <Text style={styles.warningText}>
@@ -145,42 +312,43 @@ export default function RankingScreen() {
               </View>
             </View>
 
-            {/* Top 10 */}
             <Text style={styles.sectionTitle}>🏆 Top 10 usuários</Text>
-            {mockTop10.map((user, i) => {
-              const isMe = user.nome === 'Vinícius';
-              const medals = ['🥇', '🥈', '🥉'];
-              return (
-                <View key={user.id} style={[styles.rankCard, isMe && styles.rankCardMe]}>
-                  <Text style={styles.rankPosition}>
-                    {i < 3 ? medals[i] : `#${i + 1}`}
-                  </Text>
-                  <View style={[styles.rankAvatar, isMe && { backgroundColor: Colors.primary }]}>
-                    <Text style={[styles.rankAvatarText, isMe && { color: Colors.white }]}>
-                      {user.nome[0]}
+            {top10.length === 0 ? (
+              <View style={styles.emptyRanking}>
+                <Text style={styles.emptyRankingText}>
+                  🚀 Complete ações no app para ganhar pontos e subir no ranking!
+                </Text>
+              </View>
+            ) : (
+              top10.map((user, i) => {
+                const isMe = user.posicao === posicao;
+                const medals = ['🥇', '🥈', '🥉'];
+                return (
+                  <View key={user.user_id} style={[styles.rankCard, isMe && styles.rankCardMe]}>
+                    <Text style={styles.rankPosition}>
+                      {i < 3 ? medals[i] : `#${i + 1}`}
                     </Text>
+                    <View style={[styles.rankAvatar, isMe && { backgroundColor: Colors.primary }]}>
+                      <Text style={[styles.rankAvatarText, isMe && { color: Colors.white }]}>
+                        {user.nome[0]}
+                      </Text>
+                    </View>
+                    <View style={styles.rankInfo}>
+                      <Text style={[styles.rankName, isMe && { color: Colors.primary }]}>
+                        {user.nome} {isMe && '(você)'}
+                      </Text>
+                      <Text style={styles.rankNivel}>{user.nivel}</Text>
+                    </View>
+                    <View style={styles.rankPontos}>
+                      <Text style={[styles.rankPontosNum, isMe && { color: Colors.primary }]}>
+                        {user.pontos_total}
+                      </Text>
+                      <Text style={styles.rankPontosLabel}>pts</Text>
+                    </View>
                   </View>
-                  <View style={styles.rankInfo}>
-                    <Text style={[styles.rankName, isMe && { color: Colors.primary }]}>
-                      {user.nome} {isMe && '(você)'}
-                    </Text>
-                    <Text style={styles.rankNivel}>{user.nivel}</Text>
-                  </View>
-                  <View style={styles.rankPontos}>
-                    <Text style={[styles.rankPontosNum, isMe && { color: Colors.primary }]}>
-                      {user.pontos}
-                    </Text>
-                    <Text style={styles.rankPontosLabel}>pts</Text>
-                  </View>
-                </View>
-              );
-            })}
-
-            <View style={styles.emptyRanking}>
-              <Text style={styles.emptyRankingText}>
-                🚀 Complete ações no app para ganhar pontos e subir no ranking!
-              </Text>
-            </View>
+                );
+              })
+            )}
           </>
         ) : (
           <>
@@ -207,7 +375,7 @@ export default function RankingScreen() {
                   <Text style={[styles.nivelCardNome, { color: n.color }]}>{n.nome}</Text>
                   <Text style={styles.nivelCardRange}>{n.min} — {n.max === 99999 ? '∞' : n.max} pontos</Text>
                 </View>
-                {pontos >= n.min && pontos <= n.max && (
+                {meuRanking?.nivel === n.nome && (
                   <View style={[styles.nivelAtualBadge, { backgroundColor: n.color }]}>
                     <Text style={styles.nivelAtualText}>Atual</Text>
                   </View>
@@ -218,7 +386,7 @@ export default function RankingScreen() {
             <View style={styles.streakRegra}>
               <Text style={styles.streakRegraTitle}>⚠️ Regra do Streak</Text>
               <Text style={styles.streakRegraText}>
-                Fique 1 dia sem abrir o app e seu streak volta para zero — igual ao Duolingo! 
+                Fique 1 dia sem abrir o app e seu streak volta para zero — igual ao Duolingo!
                 Use o app todos os dias para acumular bônus de streak. 🔥
               </Text>
             </View>
@@ -228,132 +396,3 @@ export default function RankingScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', padding: 20, paddingBottom: 12,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
-  positionBadge: {
-    backgroundColor: Colors.primaryLight, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 8,
-  },
-  positionText: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
-  tabs: {
-    flexDirection: 'row', backgroundColor: Colors.white,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-    paddingHorizontal: 20, gap: 8,
-  },
-  tab: {
-    paddingVertical: 12, paddingHorizontal: 16,
-    borderBottomWidth: 2, borderBottomColor: 'transparent',
-  },
-  tabActive: { borderBottomColor: Colors.primary },
-  tabText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
-  tabTextActive: { color: Colors.primary },
-  scroll: { padding: 20, paddingBottom: 40 },
-  userCard: {
-    backgroundColor: Colors.white, borderRadius: 20, padding: 20, marginBottom: 24,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 16, elevation: 3,
-  },
-  userCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  avatarContainer: {
-    width: 52, height: 52, borderRadius: 16,
-    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: { fontSize: 22, fontWeight: 'bold', color: Colors.white },
-  userInfo: { flex: 1 },
-  userName: { fontSize: 17, fontWeight: 'bold', color: Colors.text },
-  nivelRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  nivelIcon: { fontSize: 14 },
-  nivelNome: { fontSize: 13, fontWeight: '600' },
-  streakContainer: { alignItems: 'center' },
-  streakEmoji: { fontSize: 22 },
-  streakNum: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
-  streakLabel: { fontSize: 11, color: Colors.textMuted },
-  pontosRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  pontosCard: {
-    flex: 1, backgroundColor: Colors.surfaceLight,
-    borderRadius: 14, padding: 12, alignItems: 'center',
-  },
-  pontosNum: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
-  pontosLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-  progressSection: { marginBottom: 14 },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  progressLabel: { fontSize: 12, color: Colors.textMuted, fontWeight: '500' },
-  progressValue: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
-  progressBar: {
-    height: 8, backgroundColor: Colors.surfaceLight,
-    borderRadius: 4, overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: 4, minWidth: 8 },
-  warningRow: {
-    flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-    backgroundColor: Colors.warningLight, borderRadius: 12, padding: 10,
-  },
-  warningText: { flex: 1, fontSize: 12, color: Colors.warning, fontWeight: '500' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-  rankCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: 16, padding: 14, marginBottom: 8,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 1,
-  },
-  rankCardMe: {
-    borderWidth: 1.5, borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
-  },
-  rankPosition: { fontSize: 18, width: 32, textAlign: 'center' },
-  rankAvatar: {
-    width: 38, height: 38, borderRadius: 12,
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  rankAvatarText: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
-  rankInfo: { flex: 1 },
-  rankName: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  rankNivel: { fontSize: 12, color: Colors.textMuted },
-  rankPontos: { alignItems: 'flex-end' },
-  rankPontosNum: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
-  rankPontosLabel: { fontSize: 11, color: Colors.textMuted },
-  emptyRanking: {
-    backgroundColor: Colors.primaryLight, borderRadius: 16,
-    padding: 16, marginTop: 8,
-  },
-  emptyRankingText: { fontSize: 14, color: Colors.primary, fontWeight: '500', textAlign: 'center' },
-  regrasTitulo: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-  regraCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: 16, padding: 14, marginBottom: 8,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
-  },
-  regraIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  regraAcao: { flex: 1, fontSize: 14, fontWeight: '500', color: Colors.text },
-  regraPontos: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
-  regraPontosText: { fontSize: 14, fontWeight: '700' },
-  nivelCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: 16, padding: 14, marginBottom: 8,
-    shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
-  },
-  nivelCardIcon: { fontSize: 24 },
-  nivelCardInfo: { flex: 1 },
-  nivelCardNome: { fontSize: 15, fontWeight: '700' },
-  nivelCardRange: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  nivelAtualBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  nivelAtualText: { fontSize: 11, fontWeight: '700', color: Colors.white },
-  streakRegra: {
-    backgroundColor: Colors.warningLight, borderRadius: 16, padding: 16, marginTop: 16,
-  },
-  streakRegraTitle: { fontSize: 15, fontWeight: '700', color: Colors.warning, marginBottom: 8 },
-  streakRegraText: { fontSize: 13, color: Colors.warning, lineHeight: 20 },
-});
