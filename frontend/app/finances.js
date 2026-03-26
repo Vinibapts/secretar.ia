@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../constants/colors';
 import { getFinances, createFinance, deleteFinance, getResumo } from '../services/api';
+import { fetchStockData, formatCurrency, formatPercent, getTrendColor, openStockLink } from '../services/stockService';
 
 export default function FinancesScreen() {
   const Colors = useColors();
@@ -23,6 +24,8 @@ export default function FinancesScreen() {
   const [categoria, setCategoria] = useState('');
   const [descricao, setDescricao] = useState('');
   const [saving, setSaving] = useState(false);
+  const [stocks, setStocks] = useState([]);
+  const [stocksLoading, setStocksLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -32,16 +35,30 @@ export default function FinancesScreen() {
 
   const loadData = async () => {
     try {
-      const [financesRes, resumoRes] = await Promise.all([
+      const [financesRes, resumoRes, stocksRes] = await Promise.all([
         getFinances(),
         getResumo(),
+        fetchStockData(),
       ]);
       setFinances(financesRes.data);
       setResumo(resumoRes.data);
+      setStocks(stocksRes);
     } catch (err) {
       console.log('Erro:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStocks = async () => {
+    setStocksLoading(true);
+    try {
+      const stocksRes = await fetchStockData();
+      setStocks(stocksRes);
+    } catch (err) {
+      console.log('Erro ao carregar ações:', err);
+    } finally {
+      setStocksLoading(false);
     }
   };
 
@@ -191,6 +208,73 @@ export default function FinancesScreen() {
       shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
     },
     saveBtnText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
+    stockSection: {
+      marginBottom: 24,
+    },
+    stockHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    stockHorizontal: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    stockCard: {
+      flex: 1,
+      minWidth: 140,
+      backgroundColor: Colors.surface,
+      borderRadius: 16,
+      padding: 12,
+      shadowColor: '#3B82F6',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    stockHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    stockName: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: Colors.text,
+    },
+    stockSymbol: {
+      fontSize: 10,
+      color: Colors.textMuted,
+      fontWeight: '500',
+    },
+    stockPrice: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: Colors.text,
+      marginBottom: 4,
+    },
+    stockChange: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    stockChangeValue: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    stockChangePercent: {
+      fontSize: 10,
+      fontWeight: '500',
+    },
+    stockLoading: {
+      height: 120,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: Colors.surfaceLight,
+      borderRadius: 16,
+    },
   });
 
   return (
@@ -250,6 +334,64 @@ export default function FinancesScreen() {
                 color={resumo.saldo >= 0 ? Colors.success : Colors.danger}
               />
             </View>
+          </View>
+
+          {/* SEÇÃO DE AÇÕES DA BOLSA */}
+          <View style={styles.stockSection}>
+            <View style={styles.stockHeader}>
+              <Text style={styles.sectionTitle}>📈 Bolsa de Valores</Text>
+              <TouchableOpacity onPress={loadStocks}>
+                <Text style={styles.sectionLink}>Atualizar</Text>
+              </TouchableOpacity>
+            </View>
+            {stocksLoading ? (
+              <View style={styles.stockLoading}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={[styles.emptyText, { marginTop: 8 }]}>Carregando ações...</Text>
+              </View>
+            ) : stocks.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="trending-up-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
+                <Text style={styles.emptyTitle}>Nenhuma ação disponível</Text>
+                <Text style={styles.emptySubtitle}>Tente atualizar mais tarde</Text>
+              </View>
+            ) : (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.stockHorizontal}
+                contentContainerStyle={{ paddingRight: 20 }}
+              >
+                {stocks.slice(0, 6).map((stock) => (
+                  <TouchableOpacity
+                    key={stock.symbol}
+                    style={styles.stockCard}
+                    onPress={() => openStockLink(stock.symbol)}
+                  >
+                    <View style={styles.stockHeader}>
+                      <View>
+                        <Text style={styles.stockName}>{stock.name}</Text>
+                        <Text style={styles.stockSymbol}>{stock.symbol}</Text>
+                      </View>
+                      <Ionicons 
+                        name={stock.trend === 'up' ? 'trending-up' : 'trending-down'}
+                        size={16} 
+                        color={getTrendColor(stock.trend)} 
+                      />
+                    </View>
+                    <Text style={styles.stockPrice}>{formatCurrency(stock.price)}</Text>
+                    <View style={styles.stockChange}>
+                      <Text style={[styles.stockChangeValue, { color: getTrendColor(stock.trend) }]}>
+                        {stock.change > 0 ? '+' : ''}{formatCurrency(stock.change)}
+                      </Text>
+                      <Text style={[styles.stockChangePercent, { color: getTrendColor(stock.trend) }]}>
+                        ({formatPercent(stock.changePercent)})
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           <Text style={styles.sectionTitle}>Transações recentes</Text>

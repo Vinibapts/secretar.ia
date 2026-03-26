@@ -29,7 +29,8 @@
 - [🎯 Agentes Especializados](#-agentes-especializados)
 - [📊 Performance](#-performance)
 - [🔧 Contribuição](#-contribuição)
-- [📄 Licença](#-licença)
+- [� Warm-up do Projeto](#-warm-up-do-projeto)
+- [� Licença](#-licença)
 
 ---
 
@@ -71,6 +72,27 @@ Transformar a forma como as pessoas gerenciam seu tempo, finanças e hábitos at
 - ✅ Análise de progresso
 - ✅ Motivação gamificada
 
+### 📝 **Gestão de Tarefas**
+- ✅ Criação e organização de tarefas
+- ✅ Priorização e categorização
+- ✅ Lembretes e notificações
+- ✅ Sincronização com agenda
+- ✅ Progresso visual
+
+### 🎤 **Interface de Voz**
+- ✅ Comandos de voz naturais
+- ✅ Reconhecimento de fala
+- ✅ Feedback de voz
+- ✅ Compreensão contextual
+- ✅ Respostas em tempo real
+
+### 🔐 **Autenticação**
+- ✅ Login seguro com JWT
+- ✅ Recuperação de senha
+- ✅ Perfil personalizado
+- ✅ Configurações de privacidade
+- ✅ Sessão persistente
+
 ### 🤖 **IA Conversacional**
 - ✅ Compreensão de português natural
 - ✅ Aprendizado contínuo
@@ -98,6 +120,9 @@ frontend/
 │   ├── finances.js       # Gestão financeira
 │   ├── habits.js         # Registro de hábitos
 │   ├── ranking.js        # Sistema de ranking
+│   ├── tasks.js          # Gestão de tarefas
+│   ├── voice.js          # Interface de voz
+│   ├── login.js          # Autenticação
 │   └── chat.js           # Interface com IA
 ├── constants/
 │   ├── colors.js         # Sistema de temas
@@ -110,21 +135,23 @@ frontend/
 ### 🚀 **Backend (FastAPI)**
 ```
 backend/
-├── api/
+├── routers/
 │   ├── events.py         # Endpoints de agenda
 │   ├── finances.py       # Endpoints financeiros
 │   ├── habits.py         # Endpoints de hábitos
 │   ├── ranking.py        # Endpoints de ranking
-│   └── ai.py             # Endpoints de IA
+│   ├── tasks.py          # Endpoints de tarefas
+│   ├── auth.py           # Autenticação
+│   └── ai_chat.py        # Endpoints de IA
 ├── ai/
 │   ├── intelligent_ai_service.py  # Serviço principal de IA
 │   └── training_examples.py        # Exemplos de treinamento
 ├── database/
 │   ├── models.py         # Modelos SQLAlchemy
-│   └── migrations/       # Migrações do banco
-└── core/
-    ├── security.py       # Autenticação
-    └── config.py         # Configurações
+│   └── database.py       # Configuração do DB
+├── schemas/
+│   └── schemas.py        # Validação de dados
+└── main.py               # Aplicação FastAPI
 ```
 
 ### 🗄️ **Banco de Dados (PostgreSQL)**
@@ -306,10 +333,23 @@ export function useColors() {
 - "Estudei [assunto] por [tempo]"
 - "Fui à academia por [duração]"
 
+#### 📝 **Tarefas**
+- "Crie uma tarefa para [descrição]"
+- "Marque tarefa [nome] como concluída"
+- "Mostre minhas tarefas de hoje"
+- "Adicione lembrete para [tarefa]"
+
+#### 🎤 **Comandos de Voz**
+- "Iniciar gravação de voz"
+- "Parar gravação"
+- "Repetir última mensagem"
+- "Falar com a IA"
+
 #### 📊 **Consultas**
 - "Quais eventos eu tenho hoje?"
 - "Quanto gastei este mês?"
 - "Como está meu ranking?"
+- "Quais tarefas pendentes?"
 
 ### 🎨 **Interface**
 
@@ -342,6 +382,21 @@ export function useColors() {
 - Níveis e conquistas
 - Comparação com amigos
 - Desafios especiais
+- Sistema de streaks
+
+#### 📝 **Tarefas**
+- Lista de tarefas pendentes
+- Criação rápida de tarefas
+- Categorização e priorização
+- Progresso visual
+- Sincronização com agenda
+
+#### 🎤 **Voz**
+- Gravação de comandos
+- Feedback visual
+- Histórico de comandos
+- Configurações de voz
+- Reconhecimento offline
 
 ---
 
@@ -369,6 +424,22 @@ training_examples = {
             "entities": {"valor": 50.00, "categoria": "transporte"},
             "response": "Gasto registrado com sucesso!"
         }
+    ],
+    "tasks_examples": [
+        {
+            "input": "crie uma tarefa para revisar o projeto",
+            "intent": "create_task",
+            "entities": {"titulo": "Revisar projeto", "prioridade": "alta"},
+            "response": "Tarefa criada com sucesso!"
+        }
+    ],
+    "voice_examples": [
+        {
+            "input": "iniciar gravação de voz",
+            "intent": "voice_command",
+            "entities": {"acao": "iniciar_gravacao"},
+            "response": "Gravação iniciada!"
+        }
     ]
 }
 ```
@@ -377,12 +448,13 @@ training_examples = {
 
 A IA identifica automaticamente o que você quer fazer:
 
-- **create_event** - Criar eventos na agenda
-- **create_finance** - Registrar transações
-- **create_habit** - Registrar hábitos
+- **create_task** - Criar e gerenciar tarefas
+- **complete_task** - Marcar tarefas como concluídas
+- **voice_command** - Usar comandos de voz
 - **query_events** - Consultar agenda
 - **query_finances** - Consultar finanças
 - **query_habits** - Consultar hábitos
+- **query_tasks** - Consultar tarefas
 
 ### 🔍 **Extração de Entidades**
 
@@ -530,6 +602,39 @@ Use o [GitHub Issues](https://github.com/your-repo/secretaria-ia/issues) para re
 - Novos hábitos
 - Gamification features
 - Performance optimizations
+
+---
+
+## 🚀 Warm-up do Projeto
+
+Antes de começar a trabalhar no projeto, execute o comando `/warmupd` para realizar uma análise completa e preparação inicial.
+
+### 📋 **O que o Warm-up Faz**
+
+1. **Análise do README.md** - Compreensão completa do projeto
+2. **Mapeamento da Estrutura** - Entendimento da arquitetura de pastas
+3. **Identificação de Tecnologias** - Stack tecnológico utilizado
+4. **Verificação de Dependências** - Principais bibliotecas e frameworks
+5. **Contexto de Desenvolvimento** - Como executar e configurar
+
+### 🎯 **Como Usar**
+
+```bash
+# Execute o comando de warm-up
+/warm-up
+```
+
+### 📄 **Arquivos de Configuração**
+
+- **`.windsurf/workflows/warm-up.md`** - Workflow de execução automática
+- **`engineer/warm-up.md`** - Guia detalhado de preparação e análise
+
+### ✅ **Benefícios**
+
+- **Alinhamento Rápido** - Todos entendem o projeto da mesma forma
+- **Economia de Tempo** - Análise automatizada evita perguntas repetitivas
+- **Contexto Unificado** - Base comum para discussões técnicas
+- **Preparação Eficiente** - Pronto para começar a desenvolver imediatamente
 
 ---
 

@@ -33,10 +33,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 # Configuração de níveis e pontos
 NIVEIS = {
-    "Iniciante": {"min": 0, "max": 99, "emoji": "🌱"},
-    "Aprendiz": {"min": 100, "max": 499, "emoji": "⭐"},
-    "Produtivo": {"min": 500, "max": 1499, "emoji": "🚀"},
-    "Expert": {"min": 1500, "max": 3999, "emoji": "💎"},
+    "Iniciante": {"min": 0, "max": 99, "emoji": "🗂️"},
+    "Aprendiz": {"min": 100, "max": 499, "emoji": "📋"},
+    "Produtivo": {"min": 500, "max": 1499, "emoji": "📈"},
+    "Expert": {"min": 1500, "max": 3999, "emoji": "🏆"},
     "Mestre": {"min": 4000, "max": float('inf'), "emoji": "👑"}
 }
 

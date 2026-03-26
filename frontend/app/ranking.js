@@ -12,17 +12,15 @@ export default function RankingScreen() {
   const Colors = useColors();
 
   const niveis = [
-    { nome: 'Iniciante', icon: '🌱', min: 0, max: 99, color: Colors.success },
-    { nome: 'Aprendiz', icon: '⭐', min: 100, max: 499, color: Colors.warning },
-    { nome: 'Produtivo', icon: '🚀', min: 500, max: 1499, color: Colors.primary },
-    { nome: 'Expert', icon: '💎', min: 1500, max: 3999, color: Colors.accent },
+    { nome: 'Iniciante', icon: '🗂️', min: 0, max: 99, color: Colors.success },
+    { nome: 'Aprendiz', icon: '📋', min: 100, max: 499, color: Colors.warning },
+    { nome: 'Produtivo', icon: '📈', min: 500, max: 1499, color: Colors.primary },
+    { nome: 'Expert', icon: '🏆', min: 1500, max: 3999, color: Colors.accent },
     { nome: 'Mestre', icon: '👑', min: 4000, max: 99999, color: '#F59E0B' },
   ];
 
   const regras = [
     { acao: 'Criar evento na agenda', pontos: '+10', icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
-    { acao: 'Concluir tarefa', pontos: '+15', icon: 'checkmark-circle', color: Colors.success, bg: Colors.successLight },
-    { acao: 'Marcar hábito do dia', pontos: '+20', icon: 'heart', color: Colors.danger, bg: Colors.dangerLight },
     { acao: 'Registrar gasto/receita', pontos: '+5', icon: 'wallet', color: Colors.warning, bg: Colors.warningLight },
     { acao: 'Usar o chat com IA', pontos: '+2', icon: 'chatbubble-ellipses', color: Colors.accent, bg: Colors.surfaceLight },
     { acao: 'Entrar no app', pontos: '+5', icon: 'phone-portrait', color: Colors.primary, bg: Colors.primaryLight },

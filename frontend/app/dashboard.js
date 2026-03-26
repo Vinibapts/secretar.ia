@@ -3,13 +3,14 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, ActivityIndicator,
   Keyboard, TouchableWithoutFeedback,
-  KeyboardAvoidingView, Platform
+  KeyboardAvoidingView, Platform, Image, Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../constants/colors';
 import { getEvents, getResumo } from '../services/api';
+import { fetchNews, formatNewsDate, openNewsArticle } from '../services/newsService';
 
 export default function DashboardScreen({ navigation, onLogout }) {
   const Colors = useColors();
@@ -19,6 +20,8 @@ export default function DashboardScreen({ navigation, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [hora, setHora] = useState('');
   const [nomeUsuario, setNomeUsuario] = useState('');
+  const [news, setNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(false);
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -37,16 +40,30 @@ export default function DashboardScreen({ navigation, onLogout }) {
 
   const loadData = async () => {
     try {
-      const [eventsRes, resumoRes] = await Promise.all([
+      const [eventsRes, resumoRes, newsRes] = await Promise.all([
         getEvents(),
         getResumo(),
+        fetchNews(),
       ]);
       setEvents(eventsRes.data);
       setResumo(resumoRes.data);
+      setNews(newsRes);
     } catch (err) {
       console.log('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNews = async () => {
+    setNewsLoading(true);
+    try {
+      const newsRes = await fetchNews();
+      setNews(newsRes);
+    } catch (err) {
+      console.log('Erro ao carregar notícias:', err);
+    } finally {
+      setNewsLoading(false);
     }
   };
 
@@ -148,6 +165,57 @@ export default function DashboardScreen({ navigation, onLogout }) {
     themeButtonTextActive: {
       color: Colors.white,
     },
+    newsSection: {
+      marginBottom: 24,
+    },
+    newsHorizontal: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    newsCard: {
+      width: 160,
+      backgroundColor: Colors.surface,
+      borderRadius: 16,
+      overflow: 'hidden',
+      shadowColor: '#3B82F6',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    newsImage: {
+      width: '100%',
+      height: 100,
+      backgroundColor: Colors.surfaceLight,
+    },
+    newsContent: {
+      padding: 12,
+    },
+    newsTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: Colors.text,
+      marginBottom: 4,
+      lineHeight: 16,
+    },
+    newsSource: {
+      fontSize: 10,
+      color: Colors.textMuted,
+      fontWeight: '500',
+    },
+    newsTime: {
+      fontSize: 9,
+      color: Colors.primary,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    newsLoading: {
+      height: 120,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: Colors.surfaceLight,
+      borderRadius: 16,
+    },
   });
 
   if (loading) {
@@ -202,6 +270,58 @@ export default function DashboardScreen({ navigation, onLogout }) {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* SEÇÃO DE NOTÍCIAS */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📰 Notícias do Dia</Text>
+            <TouchableOpacity onPress={loadNews}>
+              <Text style={styles.sectionLink}>Atualizar</Text>
+            </TouchableOpacity>
+          </View>
+          {newsLoading ? (
+            <View style={styles.newsLoading}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+              <Text style={[styles.emptyText, { marginTop: 8 }]}>Carregando notícias...</Text>
+            </View>
+          ) : news.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="newspaper-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
+              <Text style={styles.emptyText}>Nenhuma notícia disponível</Text>
+              <Text style={styles.emptySubtext}>Tente atualizar mais tarde</Text>
+            </View>
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.newsHorizontal}
+              contentContainerStyle={{ paddingRight: 20 }}
+            >
+              {news.slice(0, 8).map((article) => (
+                <TouchableOpacity
+                  key={article.id}
+                  style={styles.newsCard}
+                  onPress={() => openNewsArticle(article.url)}
+                >
+                  <Image 
+                    source={{ uri: article.image }} 
+                    style={styles.newsImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.newsContent}>
+                    <Text style={styles.newsTitle} numberOfLines={2}>
+                      {article.title}
+                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={styles.newsSource}>{article.source}</Text>
+                      <Text style={styles.newsTime}>{formatNewsDate(article.publishedAt)}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         <View style={styles.section}>
