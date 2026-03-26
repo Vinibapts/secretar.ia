@@ -150,17 +150,17 @@ export default function DashboardScreen({ navigation, onLogout }) {
     },
     emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 10, fontWeight: '600' },
     emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4, opacity: 0.7 },
-    themeButtons: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+    themeButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },
     themeButton: {
       flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-      paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
+      paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8,
       backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     },
     themeButtonActive: {
       backgroundColor: Colors.primary, borderColor: Colors.primary,
     },
     themeButtonText: {
-      fontSize: 12, fontWeight: '600', color: Colors.textMuted, marginLeft: 8
+      fontSize: 11, fontWeight: '600', color: Colors.textMuted, marginLeft: 4
     },
     themeButtonTextActive: {
       color: Colors.white,
@@ -229,7 +229,7 @@ export default function DashboardScreen({ navigation, onLogout }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-
+        
         <View style={styles.header}>
           <View style={styles.greetingContainer}>
             <View>

@@ -19,7 +19,6 @@ const light = {
   white: '#FFFFFF',
 };
 
-// Mantendo dark apenas para referência, mas não será usado
 const dark = {
   background: '#0F1420',
   surface: '#1A2233',
