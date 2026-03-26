@@ -42,7 +42,132 @@ const BRAZILIAN_NEWS_SOURCES = [
 let newsCache = {
   data: [],
   timestamp: null,
-  expiry: 30 * 60 * 1000 // 30 minutos
+  expiry: 5 * 60 * 1000 // 5 minutos para atualização automática
+};
+
+// Controle de atualização automática
+let autoRefreshInterval = null;
+
+/**
+ * Inicia atualização automática de notícias
+ */
+export const startNewsAutoRefresh = (callback, intervalMinutes = 5) => {
+  // Limpar intervalo anterior se existir
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
+
+  // Configurar novo intervalo
+  const intervalMs = intervalMinutes * 60 * 1000;
+  autoRefreshInterval = setInterval(async () => {
+    try {
+      const freshNews = await fetchNews();
+      callback(freshNews);
+    } catch (error) {
+      console.log('Erro no auto-refresh de notícias:', error);
+    }
+  }, intervalMs);
+
+  console.log(`Auto-refresh de notícias iniciado: ${intervalMinutes} minutos`);
+};
+
+/**
+ * Para atualização automática de notícias
+ */
+export const stopNewsAutoRefresh = () => {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+    console.log('Auto-refresh de notícias parado');
+  }
+};
+
+/**
+ * Gera notícias dinâmicas com variação para simulação real-time
+ */
+export const generateDynamicNews = () => {
+  const baseNews = [
+    {
+      id: '1',
+      title: 'Economia brasileira mostra sinais de recuperação',
+      description: 'Especialistas apontam crescimento no último trimestre',
+      url: 'https://g1.globo.com',
+      image: 'https://picsum.photos/seed/g1/150/100.jpg',
+      source: 'G1',
+      category: 'economy'
+    },
+    {
+      id: '2',
+      title: 'Tecnologia: Novas tendências para 2024',
+      description: 'IA e sustentabilidade dominam discussões',
+      url: 'https://uol.com.br',
+      image: 'https://picsum.photos/seed/uol/150/100.jpg',
+      source: 'UOL',
+      category: 'technology'
+    },
+    {
+      id: '3',
+      title: 'Bolsa fecha em alta com otimismo dos investidores',
+      description: 'Índice Ibovespa sobe 2,3% em dia de volatilidade',
+      url: 'https://folha.uol.com.br',
+      image: 'https://picsum.photos/seed/folha/150/100.jpg',
+      source: 'Folha',
+      category: 'business'
+    },
+    {
+      id: '4',
+      title: 'Política: Congresso discute novas medidas',
+      description: 'Projeto de lei ganha apoio popular',
+      url: 'https://bbc.com',
+      image: 'https://picsum.photos/seed/bbc/150/100.jpg',
+      source: 'BBC Brasil',
+      category: 'politics'
+    },
+    {
+      id: '5',
+      title: 'Ciência: Descoberta revoluciona área',
+      description: 'Pesquisadores brasileiros fazem avanço inédito',
+      url: 'https://estadao.com.br',
+      image: 'https://picsum.photos/seed/ciencia/150/100.jpg',
+      source: 'Estadão',
+      category: 'science'
+    },
+    {
+      id: '6',
+      title: 'Mercado financeiro: Dólar tem leve queda',
+      description: 'Moeda americana recua em relação ao real',
+      url: 'https://g1.globo.com',
+      image: 'https://picsum.photos/seed/dolar/150/100.jpg',
+      source: 'G1',
+      category: 'economy'
+    },
+    {
+      id: '7',
+      title: 'Esporte: Brasil se prepara para competição',
+      description: 'Seleção concentra para próximos jogos',
+      url: 'https://uol.com.br',
+      image: 'https://picsum.photos/seed/esporte/150/100.jpg',
+      source: 'UOL',
+      category: 'sports'
+    },
+    {
+      id: '8',
+      title: 'Cultura: Festival reúne grandes nomes',
+      description: 'Evento promove arte e música nacional',
+      url: 'https://folha.uol.com.br',
+      image: 'https://picsum.photos/seed/cultura/150/100.jpg',
+      source: 'Folha',
+      category: 'culture'
+    }
+  ];
+
+  // Adicionar timestamp e pequenas variações
+  return baseNews.map((news, index) => ({
+    ...news,
+    id: `${news.id}-${Date.now()}-${index}`,
+    publishedAt: new Date(Date.now() - Math.random() * 3600000).toISOString(), // Última hora
+    priority: Math.random() > 0.7 ? 'high' : 'normal' // 30% chance de ser prioridade alta
+  }));
 };
 
 /**
@@ -77,95 +202,12 @@ export const fetchNewsFromAPI = async () => {
 };
 
 /**
- * Busca notícias de fontes RSS (alternativa gratuita)
+ * Busca notícias de fontes RSS (alternativa gratuita) - VERSÃO DINÂMICA
  */
 export const fetchNewsFromRSS = async () => {
   try {
-    // Usar URLs de imagens que funcionam em React Native
-    const mockNews = [
-      {
-        id: '1',
-        title: 'Economia brasileira mostra sinais de recuperação',
-        description: 'Especialistas apontam crescimento no último trimestre',
-        url: 'https://g1.globo.com',
-        image: 'https://picsum.photos/seed/g1/150/100.jpg',
-        source: 'G1',
-        publishedAt: new Date().toISOString(),
-        category: 'economy'
-      },
-      {
-        id: '2',
-        title: 'Tecnologia: Novas tendências para 2024',
-        description: 'IA e sustentabilidade dominam discussões',
-        url: 'https://uol.com.br',
-        image: 'https://picsum.photos/seed/uol/150/100.jpg',
-        source: 'UOL',
-        publishedAt: new Date().toISOString(),
-        category: 'technology'
-      },
-      {
-        id: '3',
-        title: 'Saúde: Dicas para manter o bem-estar',
-        description: 'Especialistas compartilham hábitos saudáveis',
-        url: 'https://folha.uol.com.br',
-        image: 'https://picsum.photos/seed/folha/150/100.jpg',
-        source: 'Folha',
-        publishedAt: new Date().toISOString(),
-        category: 'health'
-      },
-      {
-        id: '4',
-        title: 'Política: Congresso discute novas medidas',
-        description: 'Projeto de lei ganha apoio popular',
-        url: 'https://bbc.com',
-        image: 'https://picsum.photos/seed/bbc/150/100.jpg',
-        source: 'BBC Brasil',
-        publishedAt: new Date().toISOString(),
-        category: 'politics'
-      },
-      {
-        id: '5',
-        title: 'Esporte: Brasil se prepara para competição',
-        description: 'Seleção concentra para próximos jogos',
-        url: 'https://estadao.com.br',
-        image: 'https://picsum.photos/seed/estadao/150/100.jpg',
-        source: 'Estadão',
-        publishedAt: new Date().toISOString(),
-        category: 'sports'
-      },
-      {
-        id: '6',
-        title: 'Ciência: Descoberta revoluciona área',
-        description: 'Pesquisadores brasileiros fazem avanço inédito',
-        url: 'https://g1.globo.com',
-        image: 'https://picsum.photos/seed/ciencia/150/100.jpg',
-        source: 'G1',
-        publishedAt: new Date().toISOString(),
-        category: 'science'
-      },
-      {
-        id: '7',
-        title: 'Cultura: Festival reúne grandes nomes',
-        description: 'Evento promove arte e música nacional',
-        url: 'https://uol.com.br',
-        image: 'https://picsum.photos/seed/cultura/150/100.jpg',
-        source: 'UOL',
-        publishedAt: new Date().toISOString(),
-        category: 'culture'
-      },
-      {
-        id: '8',
-        title: 'Negócios: Mercado aquece este mês',
-        description: 'Bolsa fecha em alta com novidades',
-        url: 'https://folha.uol.com.br',
-        image: 'https://picsum.photos/seed/negocios/150/100.jpg',
-        source: 'Folha',
-        publishedAt: new Date().toISOString(),
-        category: 'business'
-      }
-    ];
-
-    return mockNews;
+    // Gerar notícias dinâmicas para simulação real-time
+    return generateDynamicNews();
   } catch (error) {
     console.log('Erro ao buscar notícias RSS:', error);
     return [];
@@ -173,10 +215,10 @@ export const fetchNewsFromRSS = async () => {
 };
 
 /**
- * Função principal para buscar notícias com cache
+ * Função principal para buscar notícias com cache - VERSÃO OTIMIZADA
  */
 export const fetchNews = async () => {
-  // Verificar cache
+  // Verificar cache (reduzido para 2 minutos para mais atualizações)
   const now = Date.now();
   if (newsCache.timestamp && (now - newsCache.timestamp) < newsCache.expiry) {
     console.log('Retornando notícias do cache');
@@ -191,7 +233,7 @@ export const fetchNews = async () => {
       news = await fetchNewsFromAPI();
     }
 
-    // Se API falhar ou não tiver chave, usar RSS
+    // Se API falhar ou não tiver chave, usar RSS dinâmico
     if (news.length === 0) {
       news = await fetchNewsFromRSS();
     }
@@ -200,7 +242,7 @@ export const fetchNews = async () => {
     newsCache = {
       data: news,
       timestamp: now,
-      expiry: 30 * 60 * 1000 // 30 minutos
+      expiry: 2 * 60 * 1000 // 2 minutos para mais atualizações
     };
 
     return news;

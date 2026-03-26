@@ -6,22 +6,24 @@ import {
   KeyboardAvoidingView, Platform, Image, Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../constants/colors';
 import { getEvents, getResumo } from '../services/api';
-import { fetchNews, formatNewsDate, openNewsArticle } from '../services/newsService';
+import { fetchNews } from '../services/newsService';
+import AnimatedNewsSection from '../components/AnimatedNewsSection';
 
-export default function DashboardScreen({ navigation, onLogout }) {
+export default function DashboardScreen({ onLogout }) {
   const Colors = useColors();
+  const navigation = useNavigation();
 
   const [events, setEvents] = useState([]);
   const [resumo, setResumo] = useState({ total_receitas: 0, total_gastos: 0, saldo: 0 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [hora, setHora] = useState('');
   const [nomeUsuario, setNomeUsuario] = useState('');
   const [news, setNews] = useState([]);
-  const [newsLoading, setNewsLoading] = useState(false);
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -39,7 +41,11 @@ export default function DashboardScreen({ navigation, onLogout }) {
   );
 
   const loadData = async () => {
+    if (loading || refreshing) return;
+    
     try {
+      setLoading(true);
+      setRefreshing(true);
       const [eventsRes, resumoRes, newsRes] = await Promise.all([
         getEvents(),
         getResumo(),
@@ -49,21 +55,10 @@ export default function DashboardScreen({ navigation, onLogout }) {
       setResumo(resumoRes.data);
       setNews(newsRes);
     } catch (err) {
-      console.log('Erro ao carregar dados:', err);
+      console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadNews = async () => {
-    setNewsLoading(true);
-    try {
-      const newsRes = await fetchNews();
-      setNews(newsRes);
-    } catch (err) {
-      console.log('Erro ao carregar notícias:', err);
-    } finally {
-      setNewsLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -150,72 +145,6 @@ export default function DashboardScreen({ navigation, onLogout }) {
     },
     emptyText: { color: Colors.textMuted, fontSize: 14, marginTop: 10, fontWeight: '600' },
     emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4, opacity: 0.7 },
-    themeButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },
-    themeButton: {
-      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-      paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8,
-      backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    },
-    themeButtonActive: {
-      backgroundColor: Colors.primary, borderColor: Colors.primary,
-    },
-    themeButtonText: {
-      fontSize: 11, fontWeight: '600', color: Colors.textMuted, marginLeft: 4
-    },
-    themeButtonTextActive: {
-      color: Colors.white,
-    },
-    newsSection: {
-      marginBottom: 24,
-    },
-    newsHorizontal: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    newsCard: {
-      width: 160,
-      backgroundColor: Colors.surface,
-      borderRadius: 16,
-      overflow: 'hidden',
-      shadowColor: '#3B82F6',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      elevation: 2,
-    },
-    newsImage: {
-      width: '100%',
-      height: 100,
-      backgroundColor: Colors.surfaceLight,
-    },
-    newsContent: {
-      padding: 12,
-    },
-    newsTitle: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: Colors.text,
-      marginBottom: 4,
-      lineHeight: 16,
-    },
-    newsSource: {
-      fontSize: 10,
-      color: Colors.textMuted,
-      fontWeight: '500',
-    },
-    newsTime: {
-      fontSize: 9,
-      color: Colors.primary,
-      fontWeight: '600',
-      marginTop: 2,
-    },
-    newsLoading: {
-      height: 120,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: Colors.surfaceLight,
-      borderRadius: 16,
-    },
   });
 
   if (loading) {
@@ -228,7 +157,11 @@ export default function DashboardScreen({ navigation, onLogout }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         
         <View style={styles.header}>
           <View style={styles.greetingContainer}>
@@ -272,57 +205,8 @@ export default function DashboardScreen({ navigation, onLogout }) {
           </View>
         </View>
 
-        {/* SEÇÃO DE NOTÍCIAS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📰 Notícias do Dia</Text>
-            <TouchableOpacity onPress={loadNews}>
-              <Text style={styles.sectionLink}>Atualizar</Text>
-            </TouchableOpacity>
-          </View>
-          {newsLoading ? (
-            <View style={styles.newsLoading}>
-              <ActivityIndicator size="small" color={Colors.primary} />
-              <Text style={[styles.emptyText, { marginTop: 8 }]}>Carregando notícias...</Text>
-            </View>
-          ) : news.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Ionicons name="newspaper-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
-              <Text style={styles.emptyText}>Nenhuma notícia disponível</Text>
-              <Text style={styles.emptySubtext}>Tente atualizar mais tarde</Text>
-            </View>
-          ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.newsHorizontal}
-              contentContainerStyle={{ paddingRight: 20 }}
-            >
-              {news.slice(0, 8).map((article) => (
-                <TouchableOpacity
-                  key={article.id}
-                  style={styles.newsCard}
-                  onPress={() => openNewsArticle(article.url)}
-                >
-                  <Image 
-                    source={{ uri: article.image }} 
-                    style={styles.newsImage}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.newsContent}>
-                    <Text style={styles.newsTitle} numberOfLines={2}>
-                      {article.title}
-                    </Text>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={styles.newsSource}>{article.source}</Text>
-                      <Text style={styles.newsTime}>{formatNewsDate(article.publishedAt)}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-        </View>
+        {/* SEÇÃO DE NOTÍCIAS ANIMADAS */}
+        <AnimatedNewsSection />
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -339,7 +223,23 @@ export default function DashboardScreen({ navigation, onLogout }) {
             </View>
           ) : (
             events.slice(0, 5).map((evt, i) => (
-              <View key={i} style={styles.eventCard}>
+              <TouchableOpacity
+                key={i}
+                style={styles.eventCard}
+                onPress={() => {
+                  console.log('🔥 CLIQUE FUNCIONOU!');
+                  console.log('📱 Título:', evt.titulo);
+                  console.log('🎯 Navigation:', !!navigation);
+                  
+                  if (navigation && navigation.navigate) {
+                    console.log('🚀 Navegando...');
+                    navigation.navigate('Agenda');
+                  } else {
+                    console.log('❌ Navigation não disponível');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
                 <View style={styles.eventTimeBox}>
                   <Text style={styles.eventTimeText}>
                     {new Date(evt.data_inicio).toLocaleTimeString('pt-BR', {
@@ -357,7 +257,7 @@ export default function DashboardScreen({ navigation, onLogout }) {
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>

@@ -8,7 +8,100 @@ const CURRENCY_API_BASE_URL = 'https://api.exchangerate-api.com/v4/latest';
 let currencyCache = {
   data: [],
   timestamp: null,
-  expiry: 10 * 60 * 1000 // 10 minutos
+  expiry: 60 * 1000 // 1 minuto para atualização rápida
+};
+
+// Controle de atualização automática
+let autoRefreshInterval = null;
+
+/**
+ * Inicia atualização automática de moedas
+ */
+export const startCurrencyAutoRefresh = (callback, intervalSeconds = 60) => {
+  // Limpar intervalo anterior se existir
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
+
+  // Configurar novo intervalo
+  const intervalMs = intervalSeconds * 1000;
+  autoRefreshInterval = setInterval(async () => {
+    try {
+      const freshCurrencies = await fetchCurrencyData();
+      callback(freshCurrencies);
+    } catch (error) {
+      console.log('Erro no auto-refresh de moedas:', error);
+    }
+  }, intervalMs);
+
+  console.log(`Auto-refresh de moedas iniciado: ${intervalSeconds} segundos`);
+};
+
+/**
+ * Para atualização automática de moedas
+ */
+export const stopCurrencyAutoRefresh = () => {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+    console.log('Auto-refresh de moedas parado');
+  }
+};
+
+/**
+ * Gera dados dinâmicos de moedas com variação real-time
+ */
+export const generateDynamicCurrencyData = () => {
+  const baseCurrencies = [
+    { code: 'USD', name: 'Dólar Americano', symbol: '$', flag: '🇺🇸', baseRate: 5.45 },
+    { code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺', baseRate: 5.90 },
+    { code: 'GBP', name: 'Libra Esterlina', symbol: '£', flag: '🇬🇧', baseRate: 6.80 },
+    { code: 'JPY', name: 'Iene Japonês', symbol: '¥', flag: '🇯🇵', baseRate: 0.036 },
+    { code: 'CHF', name: 'Franco Suíço', symbol: 'Fr', flag: '🇨🇭', baseRate: 6.20 },
+    { code: 'CAD', name: 'Dólar Canadense', symbol: 'C$', flag: '🇨🇦', baseRate: 4.00 },
+    { code: 'AUD', name: 'Dólar Australiano', symbol: 'A$', flag: '🇦🇺', baseRate: 3.50 },
+    { code: 'CNY', name: 'Yuan Chinês', symbol: '¥', flag: '🇨🇳', baseRate: 0.75 },
+    { code: 'BTC', name: 'Bitcoin', symbol: '₿', flag: '₿', baseRate: 350000 },
+    { code: 'ETH', name: 'Ethereum', symbol: 'Ξ', flag: 'Ξ', baseRate: 15000 }
+  ];
+
+  // Gerar variação dinâmica
+  return baseCurrencies.map(currency => {
+    const randomFactor = Math.random() * 0.04 - 0.02; // ±2% de variação
+    const currentRate = currency.baseRate * (1 + randomFactor);
+    const change = currentRate - currency.baseRate;
+    const changePercent = (change / currency.baseRate) * 100;
+    
+    return {
+      ...currency,
+      rate: currentRate.toFixed(4),
+      change: change.toFixed(4),
+      changePercent: changePercent.toFixed(2),
+      lastUpdate: new Date().toISOString(),
+      trend: changePercent > 0 ? 'up' : 'down',
+      volatility: Math.random() > 0.8 ? 'high' : 'normal', // 20% chance de alta volatilidade
+      rateHistory: generateRateHistory(currency.baseRate, currentRate) // Histórico para gráficos
+    };
+  });
+};
+
+/**
+ * Gera histórico de taxas para simulação
+ */
+const generateRateHistory = (baseRate, currentRate) => {
+  const history = [];
+  const points = 20; // Últimos 20 pontos
+  
+  for (let i = 0; i < points; i++) {
+    const progress = i / points;
+    const rate = baseRate + (currentRate - baseRate) * progress + (Math.random() - 0.5) * 0.1;
+    history.push({
+      time: new Date(Date.now() - (points - i) * 60000).toISOString(), // Cada ponto = 1 minuto
+      rate: rate.toFixed(4)
+    });
+  }
+  
+  return history;
 };
 
 /**
@@ -28,81 +121,28 @@ const MAIN_CURRENCIES = [
 ];
 
 /**
- * Busca dados de câmbio usando API simulada (para testes)
+ * Busca dados de câmbio usando API simulada - VERSÃO DINÂMICA
  */
 export const fetchCurrencyData = async () => {
   try {
-    // Verificar cache
+    // Verificar cache (reduzido para 1 minuto)
     const now = Date.now();
     if (currencyCache.timestamp && (now - currencyCache.timestamp) < currencyCache.expiry) {
       console.log('Retornando dados de câmbio do cache');
       return currencyCache.data;
     }
 
-    // Dados simulados com variação realista em relação ao Real
-    const mockCurrencyData = MAIN_CURRENCIES.map(currency => {
-      let rate, change, changePercent;
-      
-      // Taxas de câmbio simuladas (1 moeda = X reais)
-      switch (currency.code) {
-        case 'USD':
-          rate = 5.45 + (Math.random() - 0.5) * 0.2; // ~5.45 BRL
-          break;
-        case 'EUR':
-          rate = 5.90 + (Math.random() - 0.5) * 0.3; // ~5.90 BRL
-          break;
-        case 'GBP':
-          rate = 6.80 + (Math.random() - 0.5) * 0.4; // ~6.80 BRL
-          break;
-        case 'JPY':
-          rate = 0.036 + (Math.random() - 0.5) * 0.002; // ~0.036 BRL
-          break;
-        case 'CHF':
-          rate = 6.20 + (Math.random() - 0.5) * 0.3; // ~6.20 BRL
-          break;
-        case 'CAD':
-          rate = 4.00 + (Math.random() - 0.5) * 0.2; // ~4.00 BRL
-          break;
-        case 'AUD':
-          rate = 3.50 + (Math.random() - 0.5) * 0.2; // ~3.50 BRL
-          break;
-        case 'CNY':
-          rate = 0.75 + (Math.random() - 0.5) * 0.05; // ~0.75 BRL
-          break;
-        case 'BTC':
-          rate = 350000 + (Math.random() - 0.5) * 20000; // ~350k BRL
-          break;
-        case 'ETH':
-          rate = 15000 + (Math.random() - 0.5) * 1000; // ~15k BRL
-          break;
-        default:
-          rate = 1 + Math.random();
-      }
-      
-      change = (Math.random() - 0.5) * 0.1; // Variação entre -5% e +5%
-      changePercent = (change / rate) * 100;
-      
-      return {
-        code: currency.code,
-        name: currency.name,
-        symbol: currency.symbol,
-        flag: currency.flag,
-        rate: rate.toFixed(4),
-        change: change.toFixed(4),
-        changePercent: changePercent.toFixed(2),
-        lastUpdate: new Date().toISOString(),
-        trend: changePercent > 0 ? 'up' : 'down'
-      };
-    });
+    // Gerar dados dinâmicos para simulação real-time
+    const dynamicCurrencyData = generateDynamicCurrencyData();
 
     // Atualizar cache
     currencyCache = {
-      data: mockCurrencyData,
+      data: dynamicCurrencyData,
       timestamp: now,
-      expiry: 10 * 60 * 1000 // 10 minutos
+      expiry: 60 * 1000 // 1 minuto para atualizações rápidas
     };
 
-    return mockCurrencyData;
+    return dynamicCurrencyData;
   } catch (error) {
     console.log('Erro ao buscar dados de câmbio:', error);
     return [];

@@ -12,6 +12,8 @@ import { useColors } from '../constants/colors';
 import { getFinances, createFinance, deleteFinance, getResumo } from '../services/api';
 import { fetchStockData, formatCurrency, formatPercent, getTrendColor, openStockLink } from '../services/stockService';
 import { fetchCurrencyData, formatCurrencyValue, formatCurrencyPercent, getCurrencyTrendColor, openCurrencyLink } from '../services/currencyService';
+import AnimatedStockScrollSection from '../components/AnimatedStockScrollSection';
+import AnimatedCurrencyScrollSection from '../components/AnimatedCurrencyScrollSection';
 
 export default function FinancesScreen() {
   const Colors = useColors();
@@ -410,121 +412,11 @@ export default function FinancesScreen() {
             </View>
           </View>
 
-          {/* SEÇÃO DE AÇÕES DA BOLSA */}
-          <View style={styles.stockSection}>
-            <View style={styles.stockHeader}>
-              <Text style={styles.sectionTitle}>📈 Bolsa de Valores</Text>
-              <TouchableOpacity onPress={loadStocks}>
-                <Text style={styles.sectionLink}>Atualizar</Text>
-              </TouchableOpacity>
-            </View>
-            {stocksLoading ? (
-              <View style={styles.stockLoading}>
-                <ActivityIndicator size="small" color={Colors.primary} />
-                <Text style={[styles.emptyText, { marginTop: 8 }]}>Carregando ações...</Text>
-              </View>
-            ) : stocks.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="trending-up-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
-                <Text style={styles.emptyTitle}>Nenhuma ação disponível</Text>
-                <Text style={styles.emptySubtitle}>Tente atualizar mais tarde</Text>
-              </View>
-            ) : (
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.stockHorizontal}
-                contentContainerStyle={{ paddingRight: 20 }}
-              >
-                {stocks.slice(0, 6).map((stock) => (
-                  <TouchableOpacity
-                    key={stock.symbol}
-                    style={styles.stockCard}
-                    onPress={() => openStockLink(stock.symbol)}
-                  >
-                    <View style={styles.stockHeader}>
-                      <View>
-                        <Text style={styles.stockName}>{stock.name}</Text>
-                        <Text style={styles.stockSymbol}>{stock.symbol}</Text>
-                      </View>
-                      <Ionicons 
-                        name={stock.trend === 'up' ? 'trending-up' : 'trending-down'}
-                        size={16} 
-                        color={getTrendColor(stock.trend)} 
-                      />
-                    </View>
-                    <Text style={styles.stockPrice}>{formatCurrency(stock.price)}</Text>
-                    <View style={styles.stockChange}>
-                      <Text style={[styles.stockChangeValue, { color: getTrendColor(stock.trend) }]}>
-                        {stock.change > 0 ? '+' : ''}{formatCurrency(stock.change)}
-                      </Text>
-                      <Text style={[styles.stockChangePercent, { color: getTrendColor(stock.trend) }]}>
-                        ({formatPercent(stock.changePercent)})
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
+          {/* SEÇÃO DE AÇÕES DA BOLSA ANIMADA */}
+          <AnimatedStockScrollSection />
 
-          {/* SEÇÃO DE MOEDAS E CÂMBIO */}
-          <View style={styles.currencySection}>
-            <View style={styles.currencyHeader}>
-              <Text style={styles.sectionTitle}>💱 Moedas e Câmbio</Text>
-              <TouchableOpacity onPress={loadCurrencies}>
-                <Text style={styles.sectionLink}>Atualizar</Text>
-              </TouchableOpacity>
-            </View>
-            {currenciesLoading ? (
-              <View style={styles.currencyLoading}>
-                <ActivityIndicator size="small" color={Colors.primary} />
-                <Text style={[styles.emptyText, { marginTop: 8 }]}>Carregando moedas...</Text>
-              </View>
-            ) : currencies.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="swap-horizontal-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
-                <Text style={styles.emptyTitle}>Nenhuma moeda disponível</Text>
-                <Text style={styles.emptySubtitle}>Tente atualizar mais tarde</Text>
-              </View>
-            ) : (
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.currencyHorizontal}
-                contentContainerStyle={{ paddingRight: 20 }}
-              >
-                {currencies.slice(0, 8).map((currency) => (
-                  <TouchableOpacity
-                    key={currency.code}
-                    style={styles.currencyCard}
-                    onPress={() => openCurrencyLink(currency.code)}
-                  >
-                    <View style={styles.currencyHeader}>
-                      <View>
-                        <Text style={styles.currencyName}>{currency.flag} {currency.name}</Text>
-                        <Text style={styles.currencyCode}>{currency.code}</Text>
-                      </View>
-                      <Ionicons 
-                        name={currency.trend === 'up' ? 'trending-up' : 'trending-down'}
-                        size={14} 
-                        color={getCurrencyTrendColor(currency.trend)} 
-                      />
-                    </View>
-                    <Text style={styles.currencyRate}>{formatCurrencyValue(currency.rate, 'R$')}</Text>
-                    <View style={styles.currencyChange}>
-                      <Text style={[styles.currencyChangeValue, { color: getCurrencyTrendColor(currency.trend) }]}>
-                        {formatCurrencyValue(currency.change, '')}
-                      </Text>
-                      <Text style={[styles.currencyChangePercent, { color: getCurrencyTrendColor(currency.trend) }]}>
-                        ({formatCurrencyPercent(currency.changePercent)})
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
+          {/* SEÇÃO DE MOEDAS E CÂMBIO ANIMADA */}
+          <AnimatedCurrencyScrollSection />
 
           <Text style={styles.sectionTitle}>Transações recentes</Text>
 
