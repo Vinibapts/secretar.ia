@@ -165,7 +165,6 @@ export default function FinancesScreen() {
     saldoValue: { fontSize: 26, fontWeight: 'bold', marginTop: 4 },
     saldoIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-    sectionLink: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
     emptyIcon: {
       width: 80, height: 80, borderRadius: 24,
@@ -174,7 +173,6 @@ export default function FinancesScreen() {
     },
     emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
     emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6 },
-    emptyText: { fontSize: 12, color: Colors.textMuted },
     transactionCard: {
       flexDirection: 'row', alignItems: 'center', gap: 12,
       backgroundColor: Colors.surface, borderRadius: 18, padding: 14, marginBottom: 10,
@@ -251,6 +249,12 @@ export default function FinancesScreen() {
       shadowOpacity: 0.06,
       shadowRadius: 8,
       elevation: 2,
+    },
+    stockHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
     },
     stockName: {
       fontSize: 12,
@@ -460,64 +464,6 @@ export default function FinancesScreen() {
                       </Text>
                       <Text style={[styles.stockChangePercent, { color: getTrendColor(stock.trend) }]}>
                         ({formatPercent(stock.changePercent)})
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-
-          {/* SEÇÃO DE MOEDAS E CÂMBIO */}
-          <View style={styles.currencySection}>
-            <View style={styles.currencyHeader}>
-              <Text style={styles.sectionTitle}>💱 Moedas e Câmbio</Text>
-              <TouchableOpacity onPress={loadCurrencies}>
-                <Text style={styles.sectionLink}>Atualizar</Text>
-              </TouchableOpacity>
-            </View>
-            {currenciesLoading ? (
-              <View style={styles.currencyLoading}>
-                <ActivityIndicator size="small" color={Colors.primary} />
-                <Text style={[styles.emptyText, { marginTop: 8 }]}>Carregando moedas...</Text>
-              </View>
-            ) : currencies.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="swap-horizontal-outline" size={36} color={Colors.textMuted} style={{ opacity: 0.4 }} />
-                <Text style={styles.emptyTitle}>Nenhuma moeda disponível</Text>
-                <Text style={styles.emptySubtitle}>Tente atualizar mais tarde</Text>
-              </View>
-            ) : (
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.currencyHorizontal}
-                contentContainerStyle={{ paddingRight: 20 }}
-              >
-                {currencies.slice(0, 8).map((currency) => (
-                  <TouchableOpacity
-                    key={currency.code}
-                    style={styles.currencyCard}
-                    onPress={() => openCurrencyLink(currency.code)}
-                  >
-                    <View style={styles.currencyHeader}>
-                      <View>
-                        <Text style={styles.currencyName}>{currency.flag} {currency.name}</Text>
-                        <Text style={styles.currencyCode}>{currency.code}</Text>
-                      </View>
-                      <Ionicons 
-                        name={currency.trend === 'up' ? 'trending-up' : 'trending-down'}
-                        size={14} 
-                        color={getCurrencyTrendColor(currency.trend)} 
-                      />
-                    </View>
-                    <Text style={styles.currencyRate}>{formatCurrencyValue(currency.rate, 'R$')}</Text>
-                    <View style={styles.currencyChange}>
-                      <Text style={[styles.currencyChangeValue, { color: getCurrencyTrendColor(currency.trend) }]}>
-                        {formatCurrencyValue(currency.change, '')}
-                      </Text>
-                      <Text style={[styles.currencyChangePercent, { color: getCurrencyTrendColor(currency.trend) }]}>
-                        ({formatCurrencyPercent(currency.changePercent)})
                       </Text>
                     </View>
                   </TouchableOpacity>
