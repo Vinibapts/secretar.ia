@@ -12,6 +12,7 @@ import { useColors } from '../constants/colors';
 import { getEvents, getResumo } from '../services/api';
 import { fetchNews } from '../services/newsService';
 import AnimatedNewsSection from '../components/AnimatedNewsSection';
+import SimpleSidebar from '../components/SimpleSidebar';
 
 export default function DashboardScreen({ onLogout }) {
   const Colors = useColors();
@@ -24,6 +25,7 @@ export default function DashboardScreen({ onLogout }) {
   const [hora, setHora] = useState('');
   const [nomeUsuario, setNomeUsuario] = useState('');
   const [news, setNews] = useState([]);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -89,14 +91,11 @@ export default function DashboardScreen({ onLogout }) {
     greetingContainer: { flex: 1, marginRight: 8 },
     greeting: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
     subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
-    logoutBtn: { 
-      padding: 8, 
-      minWidth: 40, 
-      height: 40, 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      backgroundColor: Colors.surfaceLight,
-      borderRadius: 12
+    avatar: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      marginRight: 12,
     },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
     statCard: {
@@ -164,15 +163,19 @@ export default function DashboardScreen({ onLogout }) {
       >
         
         <View style={styles.header}>
+          <TouchableOpacity onPress={() => setSidebarVisible(true)}>
+            <Image 
+              source={require('../assets/fotoperfil.png')} 
+              style={styles.avatar} 
+            />
+          </TouchableOpacity>
+          
           <View style={styles.greetingContainer}>
             <View>
-              <Text style={styles.greeting} numberOfLines={1}>{hora}{nomeUsuario ? `, ${nomeUsuario}` : ''} 👋</Text>
+              <Text style={styles.greeting} numberOfLines={1}>{hora}{nomeUsuario ? `, ${nomeUsuario}` : ''}</Text>
               <Text style={styles.subGreeting}>Aqui está o seu painel</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-            <Ionicons name="log-out-outline" size={22} color={Colors.textMuted} />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.statsGrid}>
@@ -263,6 +266,9 @@ export default function DashboardScreen({ onLogout }) {
         </View>
 
       </ScrollView>
+
+      {/* Sidebar */}
+      <SimpleSidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} onLogout={onLogout} />
     </SafeAreaView>
   );
 }
