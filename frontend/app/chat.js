@@ -10,18 +10,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioRecorder, AudioModule, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import { useColors } from '../constants/colors';
 import { sendMessage, transcribeAudio } from '../services/api';
-
-const getInitialMessage = (nome) => [{
-  id: '1',
-  role: 'ai',
-  content: `Olá${nome ? ', ' + nome.split(' ')[0] : ''}! 👋 Sou sua secretária pessoal com IA. Posso ajudar com sua agenda, finanças, hábitos e muito mais. O que precisa hoje?`,
-  time: '08:00',
-}];
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 export default function ChatScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
 
-  const [messages, setMessages] = useState(getInitialMessage(''));
+  const getInitialMessage = (nome) => [{
+    id: '1',
+    role: 'ai',
+    content: t('mensagem_inicial', { nome: nome ? ', ' + nome.split(' ')[0] : '' }),
+    time: '08:00',
+  }];
+
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -37,7 +40,7 @@ export default function ChatScreen() {
 
   const buscarNome = async () => {
     const nome = await AsyncStorage.getItem('nomeUsuario');
-    if (nome) setMessages(getInitialMessage(nome));
+    setMessages(getInitialMessage(nome || ''));
   };
 
   const pedirPermissaoMicrofone = async () => {
@@ -65,7 +68,7 @@ export default function ChatScreen() {
       const res = await sendMessage({ mensagem: userMsg.content });
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'ai', content: res.data.resposta, time: getTime() }]);
     } catch {
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'ai', content: 'Desculpe, ocorreu um erro. Tente novamente!', time: getTime() }]);
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'ai', content: t('erro_mensagem'), time: getTime() }]);
     } finally {
       setLoading(false);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
@@ -85,7 +88,7 @@ export default function ChatScreen() {
       setIsRecording(true);
     } catch (err) {
       console.log('Erro ao gravar:', err);
-      Alert.alert('Erro', 'Não foi possível iniciar a gravação.');
+      Alert.alert(t('erro'), t('erro_gravacao'));
     }
   };
 
@@ -94,13 +97,11 @@ export default function ChatScreen() {
       setIsRecording(false);
       await audioRecorder.stop();
       const uri = audioRecorder.uri;
-      if (!uri) { Alert.alert('Erro', 'Nenhum áudio gravado.'); return; }
+      if (!uri) { Alert.alert(t('erro'), t('nenhum_audio')); return; }
       setIsTranscribing(true);
       setLoading(true);
       const res = await transcribeAudio(uri);
       const { texto_transcrito, resposta } = res.data;
-      
-      // FLUXO SIMPLES - Sem verificação de conflito
       setMessages(prev => [...prev,
         { id: Date.now().toString(), role: 'user', content: `🎤 ${texto_transcrito}`, time: getTime() },
         { id: (Date.now() + 1).toString(), role: 'ai', content: resposta, time: getTime() }
@@ -108,7 +109,7 @@ export default function ChatScreen() {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (err) {
       console.log('Erro ao transcrever:', err);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: '❌ Erro ao processar o áudio. Tente novamente!', time: getTime() }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: t('erro_audio'), time: getTime() }]);
     } finally {
       setIsTranscribing(false);
       setLoading(false);
@@ -117,33 +118,23 @@ export default function ChatScreen() {
 
   const handleConfirmation = async (confirm) => {
     if (!pendingConfirmation) return;
-    
     setLoading(true);
     try {
       if (confirm) {
-        // Criar evento com forcar:true
         const dados = pendingConfirmation.dados_pendentes;
-        const res = await sendMessage({ 
-          mensagem: `SIM - Criar evento: ${dados.titulo} em ${dados.data} às ${dados.hora} ${dados.local ? `em ${dados.local}` : ''}` 
+        await sendMessage({
+          mensagem: `SIM - Criar evento: ${dados.titulo} em ${dados.data} às ${dados.hora} ${dados.local ? `em ${dados.local}` : ''}`
         });
-        
-        setMessages(prev => [...prev, { 
-          id: Date.now().toString(), 
-          role: 'ai', 
-          content: `✅ Confirmado! Evento '${dados.titulo}' criado para ${dados.data} às ${dados.hora}${dados.local ? ` em ${dados.local}` : ''}`, 
-          time: getTime() 
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(), role: 'ai',
+          content: `✅ ${t('evento_confirmado', { titulo: dados.titulo, data: dados.data, hora: dados.hora })}`,
+          time: getTime()
         }]);
       } else {
-        setMessages(prev => [...prev, { 
-          id: Date.now().toString(), 
-          role: 'ai', 
-          content: 'Ok, evento cancelado.', 
-          time: getTime() 
-        }]);
+        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: t('evento_cancelado'), time: getTime() }]);
       }
     } catch (err) {
-      console.log('Erro ao confirmar:', err);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: '❌ Erro ao processar confirmação. Tente novamente!', time: getTime() }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: t('erro_confirmacao'), time: getTime() }]);
     } finally {
       setPendingConfirmation(null);
       setLoading(false);
@@ -154,7 +145,7 @@ export default function ChatScreen() {
   const renderMessage = ({ item }) => {
     const isUser = item.role === 'user';
     const hasConfirmation = item.hasConfirmation && pendingConfirmation;
-    
+
     return (
       <View style={[styles.messageRow, isUser && styles.messageRowUser]}>
         {!isUser && (
@@ -165,22 +156,13 @@ export default function ChatScreen() {
         <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAI]}>
           <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{item.content}</Text>
           <Text style={[styles.bubbleTime, isUser && styles.bubbleTimeUser]}>{item.time}</Text>
-          
           {hasConfirmation && (
             <View style={styles.confirmationButtons}>
-              <TouchableOpacity 
-                style={[styles.confirmBtn, styles.confirmBtnNo]} 
-                onPress={() => handleConfirmation(false)}
-                disabled={loading}
-              >
-                <Text style={styles.confirmBtnTextNo}>NÃO</Text>
+              <TouchableOpacity style={[styles.confirmBtn, styles.confirmBtnNo]} onPress={() => handleConfirmation(false)} disabled={loading}>
+                <Text style={styles.confirmBtnTextNo}>{t('nao')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.confirmBtn, styles.confirmBtnYes]} 
-                onPress={() => handleConfirmation(true)}
-                disabled={loading}
-              >
-                <Text style={styles.confirmBtnTextYes}>SIM</Text>
+              <TouchableOpacity style={[styles.confirmBtn, styles.confirmBtnYes]} onPress={() => handleConfirmation(true)} disabled={loading}>
+                <Text style={styles.confirmBtnTextYes}>{t('sim')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -204,10 +186,7 @@ export default function ChatScreen() {
       shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
     },
-    headerAvatar: {
-      width: 44, height: 44, borderRadius: 14,
-      backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center',
-    },
+    headerAvatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
     headerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
     headerAccent: { color: Colors.primary },
     headerStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
@@ -216,20 +195,12 @@ export default function ChatScreen() {
     messagesList: { padding: 16, paddingBottom: 8 },
     messageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 16 },
     messageRowUser: { flexDirection: 'row-reverse' },
-    avatar: {
-      width: 32, height: 32, borderRadius: 10,
-      backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center',
-    },
-    avatarUser: {
-      width: 32, height: 32, borderRadius: 10,
-      backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center',
-    },
+    avatar: { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+    avatarUser: { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
     bubble: {
-      maxWidth: '75%', borderRadius: 18, padding: 12,
-      backgroundColor: Colors.surface,
+      maxWidth: '75%', borderRadius: 18, padding: 12, backgroundColor: Colors.surface,
       shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06, shadowRadius: 6, elevation: 1,
-      borderBottomLeftRadius: 4,
+      shadowOpacity: 0.06, shadowRadius: 6, elevation: 1, borderBottomLeftRadius: 4,
     },
     bubbleUser: { backgroundColor: Colors.primary, borderBottomLeftRadius: 18, borderBottomRightRadius: 4 },
     bubbleAI: {},
@@ -237,14 +208,6 @@ export default function ChatScreen() {
     bubbleTextUser: { color: Colors.white },
     bubbleTime: { fontSize: 11, color: Colors.textMuted, marginTop: 4, textAlign: 'right' },
     bubbleTimeUser: { color: 'rgba(255,255,255,0.7)' },
-    loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 8 },
-    loadingBubble: {
-      flexDirection: 'row', alignItems: 'center', gap: 8,
-      backgroundColor: Colors.surface, borderRadius: 18, padding: 12,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06, shadowRadius: 6, elevation: 1,
-    },
-    loadingText: { fontSize: 13, color: Colors.textMuted },
     recordingRow: {
       flexDirection: 'row', alignItems: 'center', gap: 8,
       paddingHorizontal: 16, paddingVertical: 10,
@@ -272,48 +235,18 @@ export default function ChatScreen() {
     micBtn: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
     micBtnRecording: { backgroundColor: Colors.danger },
     confirmationButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },
-    confirmBtn: { 
-      flex: 1, 
-      paddingVertical: 8, 
-      paddingHorizontal: 16, 
-      borderRadius: 12, 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      minWidth: 60
-    },
-    confirmBtnYes: { 
-      backgroundColor: Colors.primary,
-      shadowColor: Colors.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    confirmBtnNo: { 
-      backgroundColor: Colors.surfaceLight,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-    confirmBtnTextYes: { 
-      color: Colors.white, 
-      fontSize: 14, 
-      fontWeight: '600' 
-    },
-    confirmBtnTextNo: { 
-      color: Colors.textMuted, 
-      fontSize: 14, 
-      fontWeight: '600' 
-    }
+    confirmBtn: { flex: 1, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minWidth: 60 },
+    confirmBtnYes: { backgroundColor: Colors.primary, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
+    confirmBtnNo: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border },
+    confirmBtnTextYes: { color: Colors.white, fontSize: 14, fontWeight: '600' },
+    confirmBtnTextNo: { color: Colors.textMuted, fontSize: 14, fontWeight: '600' },
   });
 
   const hasInput = input.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.inner}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inner}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.inner}>
             <View style={styles.header}>
@@ -343,14 +276,14 @@ export default function ChatScreen() {
             {isRecording && (
               <View style={styles.recordingRow}>
                 <View style={styles.recordingDot} />
-                <Text style={styles.recordingText}>Gravando... Toque para parar</Text>
+                <Text style={styles.recordingText}>{t('gravando')}</Text>
               </View>
             )}
 
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
-                placeholder="Digite uma mensagem..."
+                placeholder={t('placeholder_chat')}
                 placeholderTextColor={Colors.textMuted}
                 value={input}
                 onChangeText={setInput}

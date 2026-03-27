@@ -14,9 +14,12 @@ import { fetchStockData, formatCurrency, formatPercent, getTrendColor, openStock
 import { fetchCurrencyData, formatCurrencyValue, formatCurrencyPercent, getCurrencyTrendColor, openCurrencyLink } from '../services/currencyService';
 import AnimatedStockScrollSection from '../components/AnimatedStockScrollSection';
 import AnimatedCurrencyScrollSection from '../components/AnimatedCurrencyScrollSection';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 export default function FinancesScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
 
   const [finances, setFinances] = useState([]);
   const [resumo, setResumo] = useState({ total_receitas: 0, total_gastos: 0, saldo: 0 });
@@ -28,14 +31,10 @@ export default function FinancesScreen() {
   const [descricao, setDescricao] = useState('');
   const [saving, setSaving] = useState(false);
   const [stocks, setStocks] = useState([]);
-  const [stocksLoading, setStocksLoading] = useState(false);
   const [currencies, setCurrencies] = useState([]);
-  const [currenciesLoading, setCurrenciesLoading] = useState(false);
 
   useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
+    useCallback(() => { loadData(); }, [])
   );
 
   const loadData = async () => {
@@ -57,58 +56,28 @@ export default function FinancesScreen() {
     }
   };
 
-  const loadStocks = async () => {
-    setStocksLoading(true);
-    try {
-      const stocksRes = await fetchStockData();
-      setStocks(stocksRes);
-    } catch (err) {
-      console.log('Erro ao carregar ações:', err);
-    } finally {
-      setStocksLoading(false);
-    }
-  };
-
-  const loadCurrencies = async () => {
-    setCurrenciesLoading(true);
-    try {
-      const currenciesRes = await fetchCurrencyData();
-      setCurrencies(currenciesRes);
-    } catch (err) {
-      console.log('Erro ao carregar moedas:', err);
-    } finally {
-      setCurrenciesLoading(false);
-    }
-  };
-
   const handleCreate = async () => {
     if (!valor || isNaN(parseFloat(valor))) {
-      Alert.alert('Atenção', 'Preencha um valor válido!');
+      Alert.alert(t('atencao'), t('valor_invalido'));
       return;
     }
     setSaving(true);
     try {
       await createFinance({ valor: parseFloat(valor), tipo, categoria, descricao });
       setModalVisible(false);
-      setValor('');
-      setTipo('gasto');
-      setCategoria('');
-      setDescricao('');
+      setValor(''); setTipo('gasto'); setCategoria(''); setDescricao('');
       loadData();
     } catch (err) {
-      Alert.alert('Erro', 'Não foi possível salvar!');
+      Alert.alert(t('erro'), t('erro_salvar'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (id) => {
-    Alert.alert('Excluir registro', 'Tem certeza?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir', style: 'destructive',
-        onPress: async () => { await deleteFinance(id); loadData(); }
-      }
+    Alert.alert(t('excluir_registro'), t('tem_certeza'), [
+      { text: t('cancelar'), style: 'cancel' },
+      { text: t('excluir'), style: 'destructive', onPress: async () => { await deleteFinance(id); loadData(); } }
     ]);
   };
 
@@ -167,7 +136,6 @@ export default function FinancesScreen() {
     saldoValue: { fontSize: 26, fontWeight: 'bold', marginTop: 4 },
     saldoIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-    sectionLink: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
     emptyIcon: {
       width: 80, height: 80, borderRadius: 24,
@@ -176,7 +144,6 @@ export default function FinancesScreen() {
     },
     emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
     emptySubtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 6 },
-    emptyText: { fontSize: 12, color: Colors.textMuted },
     transactionCard: {
       flexDirection: 'row', alignItems: 'center', gap: 12,
       backgroundColor: Colors.surface, borderRadius: 18, padding: 14, marginBottom: 10,
@@ -229,136 +196,14 @@ export default function FinancesScreen() {
       shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
     },
     saveBtnText: { color: Colors.white, fontSize: 16, fontWeight: '600' },
-    stockSection: {
-      marginBottom: 24,
-    },
-    stockHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    stockHorizontal: {
-      flexDirection: 'row',
-      gap: 10,
-    },
-    stockCard: {
-      flex: 1,
-      minWidth: 140,
-      backgroundColor: Colors.surface,
-      borderRadius: 16,
-      padding: 12,
-      shadowColor: '#3B82F6',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      elevation: 2,
-    },
-    stockName: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: Colors.text,
-    },
-    stockSymbol: {
-      fontSize: 10,
-      color: Colors.textMuted,
-      fontWeight: '500',
-    },
-    stockPrice: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: Colors.text,
-      marginBottom: 4,
-    },
-    stockChange: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    stockChangeValue: {
-      fontSize: 12,
-      fontWeight: '600',
-    },
-    stockChangePercent: {
-      fontSize: 10,
-      fontWeight: '500',
-    },
-    stockLoading: {
-      height: 120,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: Colors.surfaceLight,
-      borderRadius: 16,
-    },
-    currencySection: {
-      marginBottom: 24,
-    },
-    currencyHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    currencyHorizontal: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    currencyCard: {
-      flex: 1,
-      minWidth: 120,
-      backgroundColor: Colors.surface,
-      borderRadius: 16,
-      padding: 10,
-      shadowColor: '#3B82F6',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      elevation: 2,
-    },
-    currencyName: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: Colors.text,
-    },
-    currencyCode: {
-      fontSize: 9,
-      color: Colors.textMuted,
-      fontWeight: '500',
-    },
-    currencyRate: {
-      fontSize: 14,
-      fontWeight: 'bold',
-      color: Colors.text,
-      marginBottom: 3,
-    },
-    currencyChange: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-    },
-    currencyChangeValue: {
-      fontSize: 10,
-      fontWeight: '600',
-    },
-    currencyChangePercent: {
-      fontSize: 8,
-      fontWeight: '500',
-    },
-    currencyLoading: {
-      height: 100,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: Colors.surfaceLight,
-      borderRadius: 16,
-    },
   });
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Finanças</Text>
-          <Text style={styles.subtitle}>Controle suas receitas e despesas</Text>
+          <Text style={styles.title}>{t('financas')}</Text>
+          <Text style={styles.subtitle}>{t('controle_financas')}</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
           <Ionicons name="add" size={24} color={Colors.white} />
@@ -371,12 +216,13 @@ export default function FinancesScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
           <View style={styles.summaryRow}>
             <View style={[styles.summaryCard, { borderTopColor: Colors.success }]}>
               <View style={[styles.summaryIcon, { backgroundColor: Colors.successLight }]}>
                 <Ionicons name="trending-up" size={20} color={Colors.success} />
               </View>
-              <Text style={styles.summaryLabel}>Receitas</Text>
+              <Text style={styles.summaryLabel}>{t('receitas')}</Text>
               <Text style={[styles.summaryValue, { color: Colors.success }]}>
                 R$ {resumo.total_receitas.toFixed(2)}
               </Text>
@@ -385,7 +231,7 @@ export default function FinancesScreen() {
               <View style={[styles.summaryIcon, { backgroundColor: Colors.dangerLight }]}>
                 <Ionicons name="trending-down" size={20} color={Colors.danger} />
               </View>
-              <Text style={styles.summaryLabel}>Despesas</Text>
+              <Text style={styles.summaryLabel}>{t('despesas')}</Text>
               <Text style={[styles.summaryValue, { color: Colors.danger }]}>
                 R$ {resumo.total_gastos.toFixed(2)}
               </Text>
@@ -394,16 +240,12 @@ export default function FinancesScreen() {
 
           <View style={styles.saldoCard}>
             <View>
-              <Text style={styles.saldoLabel}>Saldo atual</Text>
-              <Text style={[styles.saldoValue, {
-                color: resumo.saldo >= 0 ? Colors.success : Colors.danger
-              }]}>
+              <Text style={styles.saldoLabel}>{t('saldo_atual')}</Text>
+              <Text style={[styles.saldoValue, { color: resumo.saldo >= 0 ? Colors.success : Colors.danger }]}>
                 R$ {resumo.saldo.toFixed(2)}
               </Text>
             </View>
-            <View style={[styles.saldoIcon, {
-              backgroundColor: resumo.saldo >= 0 ? Colors.successLight : Colors.dangerLight
-            }]}>
+            <View style={[styles.saldoIcon, { backgroundColor: resumo.saldo >= 0 ? Colors.successLight : Colors.dangerLight }]}>
               <Ionicons
                 name={resumo.saldo >= 0 ? 'trending-up' : 'trending-down'}
                 size={24}
@@ -412,21 +254,18 @@ export default function FinancesScreen() {
             </View>
           </View>
 
-          {/* SEÇÃO DE AÇÕES DA BOLSA ANIMADA */}
           <AnimatedStockScrollSection />
-
-          {/* SEÇÃO DE MOEDAS E CÂMBIO ANIMADA */}
           <AnimatedCurrencyScrollSection />
 
-          <Text style={styles.sectionTitle}>Transações recentes</Text>
+          <Text style={styles.sectionTitle}>{t('transacoes_recentes')}</Text>
 
           {finances.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIcon}>
                 <Ionicons name="wallet-outline" size={40} color={Colors.warning} />
               </View>
-              <Text style={styles.emptyTitle}>Nenhuma transação</Text>
-              <Text style={styles.emptySubtitle}>Toque no + para registrar</Text>
+              <Text style={styles.emptyTitle}>{t('nenhuma_transacao')}</Text>
+              <Text style={styles.emptySubtitle}>{t('toque_para_registrar')}</Text>
             </View>
           ) : (
             finances.map((f) => (
@@ -442,7 +281,7 @@ export default function FinancesScreen() {
                 </View>
                 <View style={styles.transactionContent}>
                   <Text style={styles.transactionTitle}>
-                    {f.descricao || f.categoria || (f.tipo === 'receita' ? 'Receita' : 'Gasto')}
+                    {f.descricao || f.categoria || (f.tipo === 'receita' ? t('receita') : t('gasto'))}
                   </Text>
                   <Text style={styles.transactionDate}>{formatDate(f.data)}</Text>
                 </View>
@@ -463,8 +302,8 @@ export default function FinancesScreen() {
       )}
 
       <Modal visible={modalVisible} transparent animationType="slide">
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -472,31 +311,31 @@ export default function FinancesScreen() {
               <View style={styles.modalCard}>
                 <View style={styles.modalHandle} />
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Novo registro</Text>
+                  <Text style={styles.modalTitle}>{t('novo_registro')}</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                     <Ionicons name="close" size={20} color={Colors.textMuted} />
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.label}>Tipo *</Text>
+                <Text style={styles.label}>{t('tipo')} *</Text>
                 <View style={styles.tipoRow}>
                   <TouchableOpacity
                     style={[styles.tipoBtn, tipo === 'gasto' && styles.tipoBtnGasto]}
                     onPress={() => setTipo('gasto')}
                   >
                     <Ionicons name="trending-down" size={18} color={tipo === 'gasto' ? Colors.white : Colors.textMuted} />
-                    <Text style={[styles.tipoBtnText, tipo === 'gasto' && { color: Colors.white }]}>Gasto</Text>
+                    <Text style={[styles.tipoBtnText, tipo === 'gasto' && { color: Colors.white }]}>{t('gasto')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.tipoBtn, tipo === 'receita' && styles.tipoBtnReceita]}
                     onPress={() => setTipo('receita')}
                   >
                     <Ionicons name="trending-up" size={18} color={tipo === 'receita' ? Colors.white : Colors.textMuted} />
-                    <Text style={[styles.tipoBtnText, tipo === 'receita' && { color: Colors.white }]}>Receita</Text>
+                    <Text style={[styles.tipoBtnText, tipo === 'receita' && { color: Colors.white }]}>{t('receita')}</Text>
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.label}>Valor (R$) *</Text>
+                <Text style={styles.label}>{t('valor')} (R$) *</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="0,00"
@@ -506,26 +345,29 @@ export default function FinancesScreen() {
                   keyboardType="decimal-pad"
                 />
 
-                <Text style={styles.label}>Categoria</Text>
+                <Text style={styles.label}>{t('categoria')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ex: Alimentação, Salário..."
+                  placeholder={t('placeholder_categoria')}
                   placeholderTextColor={Colors.textMuted}
                   value={categoria}
                   onChangeText={setCategoria}
                 />
 
-                <Text style={styles.label}>Descrição</Text>
+                <Text style={styles.label}>{t('descricao')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ex: Almoço no restaurante"
+                  placeholder={t('placeholder_descricao_financas')}
                   placeholderTextColor={Colors.textMuted}
                   value={descricao}
                   onChangeText={setDescricao}
                 />
 
                 <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
-                  {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+                  {saving
+                    ? <ActivityIndicator color={Colors.white} />
+                    : <Text style={styles.saveBtnText}>{t('salvar')}</Text>
+                  }
                 </TouchableOpacity>
               </View>
             </View>

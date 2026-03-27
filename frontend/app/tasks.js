@@ -7,8 +7,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { getTasks, createTask, updateTask, deleteTask } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 export default function TasksScreen() {
+  const { t } = useTranslation();
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,19 +37,17 @@ export default function TasksScreen() {
 
   const handleCreate = async () => {
     if (!titulo) {
-      Alert.alert('Atenção', 'Preencha o título!');
+      Alert.alert(t('atencao'), t('preencha_titulo_tarefa'));
       return;
     }
     setSaving(true);
     try {
       await createTask({ titulo, prioridade, categoria });
       setModalVisible(false);
-      setTitulo('');
-      setPrioridade('media');
-      setCategoria('');
+      setTitulo(''); setPrioridade('media'); setCategoria('');
       loadTasks();
     } catch (err) {
-      Alert.alert('Erro', 'Não foi possível criar a tarefa!');
+      Alert.alert(t('erro'), t('erro_criar_tarefa'));
     } finally {
       setSaving(false);
     }
@@ -64,43 +66,40 @@ export default function TasksScreen() {
   };
 
   const handleDelete = (id) => {
-    Alert.alert('Excluir tarefa', 'Tem certeza?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir', style: 'destructive',
-        onPress: async () => { await deleteTask(id); loadTasks(); }
-      }
+    Alert.alert(t('excluir_tarefa'), t('tem_certeza'), [
+      { text: t('cancelar'), style: 'cancel' },
+      { text: t('excluir'), style: 'destructive', onPress: async () => { await deleteTask(id); loadTasks(); } }
     ]);
   };
 
   const filteredTasks = filter === 'todas' ? tasks : tasks.filter(t => t.status === filter);
 
   const highPriority = filteredTasks.filter(t => t.prioridade === 'alta');
-  const medPriority = filteredTasks.filter(t => t.prioridade === 'media');
-  const lowPriority = filteredTasks.filter(t => t.prioridade === 'baixa');
+  const medPriority  = filteredTasks.filter(t => t.prioridade === 'media');
+  const lowPriority  = filteredTasks.filter(t => t.prioridade === 'baixa');
 
   const priorityConfig = {
-    alta: { color: Colors.danger, bg: Colors.dangerLight, label: 'Alta' },
-    media: { color: Colors.warning, bg: Colors.warningLight, label: 'Média' },
-    baixa: { color: Colors.textMuted, bg: Colors.surfaceLight, label: 'Baixa' },
+    alta:  { color: Colors.danger,   bg: Colors.dangerLight,  label: t('prioridade_alta')  },
+    media: { color: Colors.warning,  bg: Colors.warningLight, label: t('prioridade_media') },
+    baixa: { color: Colors.textMuted,bg: Colors.surfaceLight, label: t('prioridade_baixa') },
   };
 
   const statusConfig = {
-    a_fazer: { icon: 'ellipse-outline', color: Colors.border },
-    em_andamento: { icon: 'time-outline', color: Colors.primary },
-    concluido: { icon: 'checkmark-circle', color: Colors.success },
+    a_fazer:      { icon: 'ellipse-outline',   color: Colors.border   },
+    em_andamento: { icon: 'time-outline',       color: Colors.primary  },
+    concluido:    { icon: 'checkmark-circle',   color: Colors.success  },
   };
 
   const filters = [
-    { key: 'todas', label: 'Todas' },
-    { key: 'a_fazer', label: 'A fazer' },
-    { key: 'em_andamento', label: 'Em progresso' },
-    { key: 'concluido', label: 'Concluídas' },
+    { key: 'todas',        label: t('filter_todas')      },
+    { key: 'a_fazer',      label: t('filter_a_fazer')    },
+    { key: 'em_andamento', label: t('filter_em_progresso') },
+    { key: 'concluido',    label: t('filter_concluidas') },
   ];
 
   const prioridades = ['alta', 'media', 'baixa'];
 
-  const totalPendentes = tasks.filter(t => t.status !== 'concluido').length;
+  const totalPendentes  = tasks.filter(t => t.status !== 'concluido').length;
   const totalConcluidas = tasks.filter(t => t.status === 'concluido').length;
 
   const renderTask = (task) => {
@@ -115,15 +114,10 @@ export default function TasksScreen() {
       >
         <Ionicons name={sc.icon} size={22} color={sc.color} />
         <View style={styles.taskContent}>
-          <Text style={[
-            styles.taskTitle,
-            task.status === 'concluido' && styles.taskTitleDone
-          ]}>
+          <Text style={[styles.taskTitle, task.status === 'concluido' && styles.taskTitleDone]}>
             {task.titulo}
           </Text>
-          {task.categoria ? (
-            <Text style={styles.taskCategory}>{task.categoria}</Text>
-          ) : null}
+          {task.categoria ? <Text style={styles.taskCategory}>{task.categoria}</Text> : null}
         </View>
         <View style={styles.taskRight}>
           <View style={[styles.priorityBadge, { backgroundColor: pc.bg }]}>
@@ -153,12 +147,11 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Tarefas</Text>
+          <Text style={styles.title}>{t('tarefas')}</Text>
           <Text style={styles.subtitle}>
-            {totalPendentes} pendentes · {totalConcluidas} concluídas
+            {totalPendentes} {t('pendentes')} · {totalConcluidas} {t('concluidas')}
           </Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
@@ -166,10 +159,8 @@ export default function TasksScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filtros */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
+        horizontal showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filters}
         style={styles.filtersWrapper}
       >
@@ -197,50 +188,49 @@ export default function TasksScreen() {
               <View style={styles.emptyIcon}>
                 <Ionicons name="checkmark-circle-outline" size={36} color={Colors.success} />
               </View>
-              <Text style={styles.emptyTitle}>Nenhuma tarefa</Text>
-              <Text style={styles.emptySubtitle}>Toque no + para adicionar uma tarefa</Text>
+              <Text style={styles.emptyTitle}>{t('nenhuma_tarefa')}</Text>
+              <Text style={styles.emptySubtitle}>{t('toque_para_adicionar')}</Text>
             </View>
           ) : (
             <>
-              {renderGroup('Prioridade Alta', highPriority, Colors.danger)}
-              {renderGroup('Prioridade Média', medPriority, Colors.warning)}
-              {renderGroup('Prioridade Baixa', lowPriority, Colors.textMuted)}
+              {renderGroup(t('grupo_alta'),  highPriority, Colors.danger)}
+              {renderGroup(t('grupo_media'), medPriority,  Colors.warning)}
+              {renderGroup(t('grupo_baixa'), lowPriority,  Colors.textMuted)}
             </>
           )}
         </ScrollView>
       )}
 
-      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nova tarefa</Text>
+              <Text style={styles.modalTitle}>{t('nova_tarefa')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <Ionicons name="close" size={20} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>Título *</Text>
+            <Text style={styles.label}>{t('titulo')} *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ex: Finalizar proposta"
+              placeholder={t('placeholder_tarefa')}
               placeholderTextColor={Colors.textMuted}
               value={titulo}
               onChangeText={setTitulo}
             />
 
-            <Text style={styles.label}>Categoria</Text>
+            <Text style={styles.label}>{t('categoria')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ex: Trabalho, Pessoal..."
+              placeholder={t('placeholder_categoria_tarefa')}
               placeholderTextColor={Colors.textMuted}
               value={categoria}
               onChangeText={setCategoria}
             />
 
-            <Text style={styles.label}>Prioridade</Text>
+            <Text style={styles.label}>{t('prioridade')}</Text>
             <View style={styles.priorityRow}>
               {prioridades.map(p => {
                 const pc = priorityConfig[p];
@@ -248,17 +238,11 @@ export default function TasksScreen() {
                 return (
                   <TouchableOpacity
                     key={p}
-                    style={[
-                      styles.priorityOption,
-                      active && { backgroundColor: pc.bg, borderColor: pc.color }
-                    ]}
+                    style={[styles.priorityOption, active && { backgroundColor: pc.bg, borderColor: pc.color }]}
                     onPress={() => setPrioridade(p)}
                   >
                     <View style={[styles.priorityDot, { backgroundColor: pc.color }]} />
-                    <Text style={[
-                      styles.priorityOptionText,
-                      active && { color: pc.color, fontWeight: '700' }
-                    ]}>
+                    <Text style={[styles.priorityOptionText, active && { color: pc.color, fontWeight: '700' }]}>
                       {pc.label}
                     </Text>
                   </TouchableOpacity>
@@ -267,11 +251,10 @@ export default function TasksScreen() {
             </View>
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.saveBtnText}>Salvar tarefa</Text>
-              )}
+              {saving
+                ? <ActivityIndicator color={Colors.white} />
+                : <Text style={styles.saveBtnText}>{t('salvar_tarefa')}</Text>
+              }
             </TouchableOpacity>
           </View>
         </View>
@@ -296,15 +279,9 @@ const styles = StyleSheet.create({
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },
-  filtersWrapper: {
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
+  filtersWrapper: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
   filters: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  filterBtn: {
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20, backgroundColor: Colors.surfaceLight,
-  },
+  filterBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: Colors.surfaceLight },
   filterBtnActive: { backgroundColor: Colors.primary },
   filterText: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
   filterTextActive: { color: Colors.white, fontWeight: '600' },
@@ -319,21 +296,16 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
   emptySubtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 6 },
   group: { marginBottom: 20 },
-  groupHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    gap: 8, marginBottom: 10,
-  },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   groupDot: { width: 8, height: 8, borderRadius: 4 },
   groupTitle: { fontSize: 13, fontWeight: '700', color: Colors.textMuted, flex: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
   groupCount: {
     fontSize: 12, fontWeight: '700', color: Colors.textMuted,
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
+    backgroundColor: Colors.surfaceLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
   },
   taskCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 14, marginBottom: 8,
+    backgroundColor: Colors.white, borderRadius: 14, padding: 14, marginBottom: 8,
     shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 8, elevation: 1,
   },
@@ -351,32 +323,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white, borderTopLeftRadius: 28,
     borderTopRightRadius: 28, padding: 24, paddingTop: 12,
   },
-  modalHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 20,
-  },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
-  closeBtn: {
-    width: 32, height: 32, borderRadius: 10,
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 13, color: Colors.text, fontWeight: '600', marginBottom: 6, marginTop: 14 },
-  input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 13,
-    color: Colors.text, fontSize: 15,
-  },
+  input: { backgroundColor: Colors.surfaceLight, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, color: Colors.text, fontSize: 15 },
   priorityRow: { flexDirection: 'row', gap: 8 },
   priorityOption: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 6, paddingVertical: 12, borderRadius: 14,
-    borderWidth: 1.5, borderColor: Colors.border,
-    backgroundColor: Colors.white,
+    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white,
   },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
   priorityOptionText: { fontSize: 13, fontWeight: '500', color: Colors.textMuted },

@@ -7,24 +7,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../constants/colors';
 import { getMeuRanking, getTopRanking } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 export default function RankingScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
 
   const niveis = [
-    { nome: 'Iniciante', icon: '🗂️', min: 0, max: 99, color: Colors.success },
-    { nome: 'Aprendiz', icon: '📋', min: 100, max: 499, color: Colors.warning },
-    { nome: 'Produtivo', icon: '📈', min: 500, max: 1499, color: Colors.primary },
-    { nome: 'Expert', icon: '🏆', min: 1500, max: 3999, color: Colors.accent },
-    { nome: 'Mestre', icon: '👑', min: 4000, max: 99999, color: '#F59E0B' },
+    { nome: t('nivel_iniciante'), icon: '🗂️', min: 0,    max: 99,    color: Colors.success },
+    { nome: t('nivel_aprendiz'), icon: '📋', min: 100,   max: 499,   color: Colors.warning },
+    { nome: t('nivel_produtivo'),icon: '📈', min: 500,   max: 1499,  color: Colors.primary },
+    { nome: t('nivel_expert'),   icon: '🏆', min: 1500,  max: 3999,  color: Colors.accent  },
+    { nome: t('nivel_mestre'),   icon: '👑', min: 4000,  max: 99999, color: '#F59E0B'      },
   ];
 
   const regras = [
-    { acao: 'Criar evento na agenda', pontos: '+10', icon: 'calendar', color: Colors.primary, bg: Colors.primaryLight },
-    { acao: 'Registrar gasto/receita', pontos: '+5', icon: 'wallet', color: Colors.warning, bg: Colors.warningLight },
-    { acao: 'Usar o chat com IA', pontos: '+2', icon: 'chatbubble-ellipses', color: Colors.accent, bg: Colors.surfaceLight },
-    { acao: 'Entrar no app', pontos: '+5', icon: 'phone-portrait', color: Colors.primary, bg: Colors.primaryLight },
-    { acao: 'Streak de 7 dias', pontos: '+50', icon: 'flame', color: '#F59E0B', bg: Colors.warningLight },
+    { acao: t('regra_evento'),   pontos: '+10', icon: 'calendar',           color: Colors.primary, bg: Colors.primaryLight },
+    { acao: t('regra_financa'),  pontos: '+5',  icon: 'wallet',             color: Colors.warning, bg: Colors.warningLight },
+    { acao: t('regra_chat'),     pontos: '+2',  icon: 'chatbubble-ellipses',color: Colors.accent,  bg: Colors.surfaceLight },
+    { acao: t('regra_entrar'),   pontos: '+5',  icon: 'phone-portrait',     color: Colors.primary, bg: Colors.primaryLight },
+    { acao: t('regra_streak'),   pontos: '+50', icon: 'flame',              color: '#F59E0B',      bg: Colors.warningLight },
   ];
 
   const [loading, setLoading] = useState(true);
@@ -33,17 +36,12 @@ export default function RankingScreen() {
   const [activeTab, setActiveTab] = useState('ranking');
 
   useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
+    useCallback(() => { loadData(); }, [])
   );
 
   const loadData = async () => {
     try {
-      const [meuRes, topRes] = await Promise.all([
-        getMeuRanking(),
-        getTopRanking(),
-      ]);
+      const [meuRes, topRes] = await Promise.all([getMeuRanking(), getTopRanking()]);
       setMeuRanking(meuRes.data);
       setTop10(topRes.data);
     } catch (err) {
@@ -67,20 +65,14 @@ export default function RankingScreen() {
     },
     title: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
     subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
-    positionBadge: {
-      backgroundColor: Colors.primaryLight, borderRadius: 12,
-      paddingHorizontal: 14, paddingVertical: 8,
-    },
+    positionBadge: { backgroundColor: Colors.primaryLight, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
     positionText: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
     tabs: {
       flexDirection: 'row', backgroundColor: Colors.surface,
       borderBottomWidth: 1, borderBottomColor: Colors.border,
       paddingHorizontal: 20, gap: 8,
     },
-    tab: {
-      paddingVertical: 12, paddingHorizontal: 16,
-      borderBottomWidth: 2, borderBottomColor: 'transparent',
-    },
+    tab: { paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 2, borderBottomColor: 'transparent' },
     tabActive: { borderBottomColor: Colors.primary },
     tabText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
     tabTextActive: { color: Colors.primary },
@@ -93,8 +85,7 @@ export default function RankingScreen() {
     userCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     avatarContainer: {
       width: 52, height: 52, borderRadius: 16,
-      backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
-      marginRight: 12,
+      backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
     avatarText: { fontSize: 22, fontWeight: 'bold', color: Colors.white },
     userInfo: { flex: 1 },
@@ -107,20 +98,14 @@ export default function RankingScreen() {
     streakNum: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
     streakLabel: { fontSize: 11, color: Colors.textMuted },
     pontosRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-    pontosCard: {
-      flex: 1, backgroundColor: Colors.surfaceLight,
-      borderRadius: 14, padding: 12, alignItems: 'center',
-    },
+    pontosCard: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 14, padding: 12, alignItems: 'center' },
     pontosNum: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
     pontosLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
     progressSection: { marginBottom: 14 },
     progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
     progressLabel: { fontSize: 12, color: Colors.textMuted, fontWeight: '500' },
     progressValue: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
-    progressBar: {
-      height: 8, backgroundColor: Colors.surfaceLight,
-      borderRadius: 4, overflow: 'hidden',
-    },
+    progressBar: { height: 8, backgroundColor: Colors.surfaceLight, borderRadius: 4, overflow: 'hidden' },
     progressFill: { height: '100%', borderRadius: 4, minWidth: 8 },
     historicoSection: { marginBottom: 14 },
     historicoTitle: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: 8 },
@@ -139,15 +124,9 @@ export default function RankingScreen() {
       shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05, shadowRadius: 8, elevation: 1,
     },
-    rankCardMe: {
-      borderWidth: 1.5, borderColor: Colors.primary,
-      backgroundColor: Colors.primaryLight,
-    },
+    rankCardMe: { borderWidth: 1.5, borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
     rankPosition: { fontSize: 18, width: 32, textAlign: 'center' },
-    rankAvatar: {
-      width: 38, height: 38, borderRadius: 12,
-      backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center',
-    },
+    rankAvatar: { width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center' },
     rankAvatarText: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
     rankInfo: { flex: 1 },
     rankName: { fontSize: 14, fontWeight: '600', color: Colors.text },
@@ -155,9 +134,7 @@ export default function RankingScreen() {
     rankPontos: { alignItems: 'flex-end' },
     rankPontosNum: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
     rankPontosLabel: { fontSize: 11, color: Colors.textMuted },
-    emptyRanking: {
-      backgroundColor: Colors.primaryLight, borderRadius: 16, padding: 16, marginTop: 8,
-    },
+    emptyRanking: { backgroundColor: Colors.primaryLight, borderRadius: 16, padding: 16, marginTop: 8 },
     emptyRankingText: { fontSize: 14, color: Colors.primary, fontWeight: '500', textAlign: 'center' },
     regrasTitulo: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
     regraCard: {
@@ -182,9 +159,7 @@ export default function RankingScreen() {
     nivelCardRange: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
     nivelAtualBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     nivelAtualText: { fontSize: 11, fontWeight: '700', color: Colors.white },
-    streakRegra: {
-      backgroundColor: Colors.warningLight, borderRadius: 16, padding: 16, marginTop: 16,
-    },
+    streakRegra: { backgroundColor: Colors.warningLight, borderRadius: 16, padding: 16, marginTop: 16 },
     streakRegraTitle: { fontSize: 15, fontWeight: '700', color: Colors.warning, marginBottom: 8 },
     streakRegraText: { fontSize: 13, color: Colors.warning, lineHeight: 20 },
   });
@@ -199,7 +174,7 @@ export default function RankingScreen() {
     );
   }
 
-  const nivel = getNivelConfig(meuRanking?.nivel || 'Iniciante');
+  const nivel = getNivelConfig(meuRanking?.nivel || t('nivel_iniciante'));
   const proximoNivel = niveis.find(n => n.nome === meuRanking?.proximo_nivel);
   const progresso = meuRanking?.progresso_percentual || 0;
   const pontos = meuRanking?.pontos_total || 0;
@@ -211,8 +186,8 @@ export default function RankingScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Ranking</Text>
-          <Text style={styles.subtitle}>Sua posição e conquistas</Text>
+          <Text style={styles.title}>{t('ranking')}</Text>
+          <Text style={styles.subtitle}>{t('sua_posicao')}</Text>
         </View>
         <View style={styles.positionBadge}>
           <Text style={styles.positionText}>#{posicao}</Text>
@@ -225,7 +200,7 @@ export default function RankingScreen() {
           onPress={() => setActiveTab('ranking')}
         >
           <Text style={[styles.tabText, activeTab === 'ranking' && styles.tabTextActive]}>
-            🏆 Ranking
+            🏆 {t('ranking')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -233,7 +208,7 @@ export default function RankingScreen() {
           onPress={() => setActiveTab('regras')}
         >
           <Text style={[styles.tabText, activeTab === 'regras' && styles.tabTextActive]}>
-            📋 Como ganhar
+            📋 {t('como_ganhar')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -256,18 +231,18 @@ export default function RankingScreen() {
                 <View style={styles.streakContainer}>
                   <Text style={styles.streakEmoji}>🔥</Text>
                   <Text style={styles.streakNum}>{streak}</Text>
-                  <Text style={styles.streakLabel}>dias</Text>
+                  <Text style={styles.streakLabel}>{t('dias')}</Text>
                 </View>
               </View>
 
               <View style={styles.pontosRow}>
                 <View style={styles.pontosCard}>
                   <Text style={styles.pontosNum}>{pontos}</Text>
-                  <Text style={styles.pontosLabel}>pontos totais</Text>
+                  <Text style={styles.pontosLabel}>{t('pontos_totais')}</Text>
                 </View>
                 <View style={styles.pontosCard}>
                   <Text style={styles.pontosNum}>{pontosHoje}</Text>
-                  <Text style={styles.pontosLabel}>pontos hoje</Text>
+                  <Text style={styles.pontosLabel}>{t('pontos_hoje')}</Text>
                 </View>
               </View>
 
@@ -275,7 +250,7 @@ export default function RankingScreen() {
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>
-                      Próximo nível: {proximoNivel.icon} {proximoNivel.nome}
+                      {t('proximo_nivel')}: {proximoNivel.icon} {proximoNivel.nome}
                     </Text>
                     <Text style={styles.progressValue}>
                       {pontos}/{meuRanking?.pontos_proximo_nivel} pts
@@ -292,7 +267,7 @@ export default function RankingScreen() {
 
               {meuRanking?.historico_hoje?.length > 0 && (
                 <View style={styles.historicoSection}>
-                  <Text style={styles.historicoTitle}>Ações de hoje</Text>
+                  <Text style={styles.historicoTitle}>{t('acoes_hoje')}</Text>
                   {meuRanking.historico_hoje.slice(0, 3).map((h, i) => (
                     <View key={i} style={styles.historicoRow}>
                       <Text style={styles.historicoMotivo}>{h.motivo}</Text>
@@ -304,18 +279,14 @@ export default function RankingScreen() {
 
               <View style={styles.warningRow}>
                 <Ionicons name="information-circle-outline" size={16} color={Colors.warning} />
-                <Text style={styles.warningText}>
-                  Use o app diariamente para manter seu streak! Fique 1 dia sem usar e ele zera. 😅
-                </Text>
+                <Text style={styles.warningText}>{t('aviso_streak')}</Text>
               </View>
             </View>
 
-            <Text style={styles.sectionTitle}>🏆 Top 10 usuários</Text>
+            <Text style={styles.sectionTitle}>🏆 {t('top10')}</Text>
             {top10.length === 0 ? (
               <View style={styles.emptyRanking}>
-                <Text style={styles.emptyRankingText}>
-                  🚀 Complete ações no app para ganhar pontos e subir no ranking!
-                </Text>
+                <Text style={styles.emptyRankingText}>{t('ranking_vazio')}</Text>
               </View>
             ) : (
               top10.map((user, i) => {
@@ -333,7 +304,7 @@ export default function RankingScreen() {
                     </View>
                     <View style={styles.rankInfo}>
                       <Text style={[styles.rankName, isMe && { color: Colors.primary }]}>
-                        {user.nome} {isMe && '(você)'}
+                        {user.nome} {isMe && `(${t('voce')})`}
                       </Text>
                       <Text style={styles.rankNivel}>{user.nivel}</Text>
                     </View>
@@ -350,7 +321,7 @@ export default function RankingScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.regrasTitulo}>Como ganhar pontos</Text>
+            <Text style={styles.regrasTitulo}>{t('como_ganhar_pontos')}</Text>
             {regras.map((regra, i) => (
               <View key={i} style={styles.regraCard}>
                 <View style={[styles.regraIcon, { backgroundColor: regra.bg }]}>
@@ -358,35 +329,30 @@ export default function RankingScreen() {
                 </View>
                 <Text style={styles.regraAcao}>{regra.acao}</Text>
                 <View style={[styles.regraPontos, { backgroundColor: regra.bg }]}>
-                  <Text style={[styles.regraPontosText, { color: regra.color }]}>
-                    {regra.pontos}
-                  </Text>
+                  <Text style={[styles.regraPontosText, { color: regra.color }]}>{regra.pontos}</Text>
                 </View>
               </View>
             ))}
 
-            <Text style={[styles.regrasTitulo, { marginTop: 24 }]}>Níveis</Text>
+            <Text style={[styles.regrasTitulo, { marginTop: 24 }]}>{t('niveis')}</Text>
             {niveis.map((n, i) => (
               <View key={i} style={styles.nivelCard}>
                 <Text style={styles.nivelCardIcon}>{n.icon}</Text>
                 <View style={styles.nivelCardInfo}>
                   <Text style={[styles.nivelCardNome, { color: n.color }]}>{n.nome}</Text>
-                  <Text style={styles.nivelCardRange}>{n.min} — {n.max === 99999 ? '∞' : n.max} pontos</Text>
+                  <Text style={styles.nivelCardRange}>{n.min} — {n.max === 99999 ? '∞' : n.max} {t('pontos_label')}</Text>
                 </View>
                 {meuRanking?.nivel === n.nome && (
                   <View style={[styles.nivelAtualBadge, { backgroundColor: n.color }]}>
-                    <Text style={styles.nivelAtualText}>Atual</Text>
+                    <Text style={styles.nivelAtualText}>{t('nivel_atual')}</Text>
                   </View>
                 )}
               </View>
             ))}
 
             <View style={styles.streakRegra}>
-              <Text style={styles.streakRegraTitle}>⚠️ Regra do Streak</Text>
-              <Text style={styles.streakRegraText}>
-                Fique 1 dia sem abrir o app e seu streak volta para zero — igual ao Duolingo!
-                Use o app todos os dias para acumular bônus de streak. 🔥
-              </Text>
+              <Text style={styles.streakRegraTitle}>⚠️ {t('regra_streak_titulo')}</Text>
+              <Text style={styles.streakRegraText}>{t('regra_streak_texto')}</Text>
             </View>
           </>
         )}

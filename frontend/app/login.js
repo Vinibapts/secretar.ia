@@ -8,17 +8,18 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../constants/colors';
 import { login, register } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
-// Função para formatar nome do email
 const formatarNome = (email) => {
   const nome = email.split('@')[0];
-  // Separar por letras maiúsculas ou números
   const partes = nome.replace(/([A-Z])/g, ' $1').replace(/([0-9])/g, ' $1').trim().split(/\s+/);
   return partes.map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase()).join(' ');
 };
 
 export default function LoginScreen({ onLogin }) {
   const Colors = useColors();
+  const { t } = useTranslation();
 
   const [isLogin, setIsLogin] = useState(true);
   const [nome, setNome] = useState('');
@@ -28,9 +29,7 @@ export default function LoginScreen({ onLogin }) {
   const [keepConnected, setKeepConnected] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    carregarCredenciais();
-  }, []);
+  useEffect(() => { carregarCredenciais(); }, []);
 
   const carregarCredenciais = async () => {
     try {
@@ -47,7 +46,7 @@ export default function LoginScreen({ onLogin }) {
 
   const handleSubmit = async () => {
     if (!email || !senha) {
-      Alert.alert('Atenção', 'Preencha todos os campos!');
+      Alert.alert(t('atencao'), t('preencha_campos'));
       return;
     }
     setLoading(true);
@@ -56,6 +55,7 @@ export default function LoginScreen({ onLogin }) {
         const res = await login({ email, senha });
         await AsyncStorage.setItem('token', res.data.access_token);
         await AsyncStorage.setItem('nomeUsuario', formatarNome(email));
+        await AsyncStorage.setItem('emailUsuario', email);
         if (keepConnected) {
           await AsyncStorage.setItem('keepConnected', 'true');
           await AsyncStorage.setItem('emailSalvo', email);
@@ -68,15 +68,15 @@ export default function LoginScreen({ onLogin }) {
         onLogin();
       } else {
         if (!nome) {
-          Alert.alert('Atenção', 'Preencha seu nome!');
+          Alert.alert(t('atencao'), t('preencha_nome'));
           return;
         }
         await register({ nome, email, senha });
-        Alert.alert('Sucesso! 🎉', 'Conta criada! Faça login.');
+        Alert.alert(t('sucesso'), t('conta_criada'));
         setIsLogin(true);
       }
     } catch (err) {
-      Alert.alert('Erro', err.response?.data?.detail || 'Algo deu errado!');
+      Alert.alert(t('erro'), err.response?.data?.detail || t('algo_deu_errado'));
     } finally {
       setLoading(false);
     }
@@ -135,10 +135,8 @@ export default function LoginScreen({ onLogin }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.inner}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inner}>
+
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
             <Ionicons name="sparkles" size={32} color={Colors.primary} />
@@ -146,24 +144,22 @@ export default function LoginScreen({ onLogin }) {
           <Text style={styles.logoText}>
             Secretar<Text style={styles.logoAccent}>.IA</Text>
           </Text>
-          <Text style={styles.logoSubtitle}>
-            Sua secretária pessoal com inteligência artificial
-          </Text>
+          <Text style={styles.logoSubtitle}>{t('slogan')}</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
-            {isLogin ? 'Entrar na sua conta' : 'Criar sua conta'}
+            {isLogin ? t('entrar_conta') : t('criar_conta')}
           </Text>
 
           {!isLogin && (
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nome</Text>
+              <Text style={styles.label}>{t('nome')}</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons name="person-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Seu nome completo"
+                  placeholder={t('placeholder_nome')}
                   placeholderTextColor={Colors.textMuted}
                   value={nome}
                   onChangeText={setNome}
@@ -173,7 +169,7 @@ export default function LoginScreen({ onLogin }) {
           )}
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('email')}</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="mail-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
@@ -189,7 +185,7 @@ export default function LoginScreen({ onLogin }) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Senha</Text>
+            <Text style={styles.label}>{t('senha')}</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
@@ -201,24 +197,17 @@ export default function LoginScreen({ onLogin }) {
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={18}
-                  color={Colors.textMuted}
-                />
+                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
 
           {isLogin && (
-            <TouchableOpacity
-              style={styles.keepConnected}
-              onPress={() => setKeepConnected(!keepConnected)}
-            >
+            <TouchableOpacity style={styles.keepConnected} onPress={() => setKeepConnected(!keepConnected)}>
               <View style={[styles.checkbox, keepConnected && styles.checkboxActive]}>
                 {keepConnected && <Ionicons name="checkmark" size={12} color={Colors.white} />}
               </View>
-              <Text style={styles.keepConnectedText}>Manter conectado</Text>
+              <Text style={styles.keepConnectedText}>{t('manter_conectado')}</Text>
             </TouchableOpacity>
           )}
 
@@ -227,7 +216,7 @@ export default function LoginScreen({ onLogin }) {
               <ActivityIndicator color={Colors.white} />
             ) : (
               <>
-                <Text style={styles.buttonText}>{isLogin ? 'Entrar' : 'Criar conta'}</Text>
+                <Text style={styles.buttonText}>{isLogin ? t('entrar') : t('criar_conta')}</Text>
                 <Ionicons name="arrow-forward" size={18} color={Colors.white} />
               </>
             )}
@@ -235,16 +224,16 @@ export default function LoginScreen({ onLogin }) {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {isLogin ? 'Não tem conta? ' : 'Já tem conta? '}
+              {isLogin ? t('nao_tem_conta') : t('ja_tem_conta')}
             </Text>
             <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-              <Text style={styles.footerLink}>{isLogin ? 'Criar conta' : 'Entrar'}</Text>
+              <Text style={styles.footerLink}>{isLogin ? t('criar_conta') : t('entrar')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.poweredBy}>
-          Powered by <Text style={styles.poweredByAccent}>Inteligência Artificial</Text>
+          Powered by <Text style={styles.poweredByAccent}>{t('inteligencia_artificial')}</Text>
         </Text>
       </KeyboardAvoidingView>
     </SafeAreaView>

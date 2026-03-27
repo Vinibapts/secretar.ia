@@ -1,355 +1,280 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Image, Dimensions, Modal
+  StyleSheet, Image, Dimensions, Modal, TextInput, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.85;
 
-// Estilos fora do componente
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-  },
-  sidebar: {
-    width: SIDEBAR_WIDTH,
-    height: '100%',
-    backgroundColor: '#f8f9fa',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-  },
-  content: {
-    flex: 1,
-  },
-  profileHeader: {
-    padding: 24,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  profileAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 12,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 4,
-  },
-  profileEmail: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  menuContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  menuSection: {
-    marginBottom: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    marginBottom: 4,
-  },
-  menuText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#2c3e50',
-    marginLeft: 12,
-  },
-  subMenu: {
-    marginLeft: 32,
-    marginTop: 8,
-  },
-  subMenuItem: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    marginBottom: 4,
-  },
-  subMenuText: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  languageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  flag: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  logoutContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#dc3545',
-  },
-  logoutText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-});
+const IDIOMAS = [
+  { label: 'Português', flag: '🇧🇷', code: 'pt' },
+  { label: 'Inglês',    flag: '🇬🇧', code: 'en' },
+  { label: 'Espanhol',  flag: '🇪🇸', code: 'es' },
+];
 
-function SidebarContent({ visible, onClose, onLogout }) {
+// ✅ onApelidoChange adicionado nos props
+function SidebarContent({ visible, onClose, onLogout, onApelidoChange }) {
   const Colors = useColors();
+  const { t, i18n } = useTranslation();
 
-  // Estados para controlar accordions
-  const [perfilExpanded, setPerfilExpanded] = useState(true);
-  const [configExpanded, setConfigExpanded] = useState(false);
+  const [perfilExpanded,       setPerfilExpanded]       = useState(true);
+  const [configExpanded,       setConfigExpanded]       = useState(false);
   const [notificacoesExpanded, setNotificacoesExpanded] = useState(false);
-  const [idiomaExpanded, setIdiomaExpanded] = useState(true);
-  
-  // Dados do usuário
-  const [nomeUsuario, setNomeUsuario] = useState('');
+  const [idiomaExpanded,       setIdiomaExpanded]       = useState(true);
+
+  const [nomeUsuario,  setNomeUsuario]  = useState('');
   const [emailUsuario, setEmailUsuario] = useState('');
 
+  const [apelidoModalVisible, setApelidoModalVisible] = useState(false);
+  const [apelidoInput, setApelidoInput] = useState('');
+
   useEffect(() => {
-    // Carregar dados do usuário
-    AsyncStorage.getItem('nomeUsuario').then(nome => {
-      if (nome) setNomeUsuario(nome);
+    AsyncStorage.getItem('apelidoUsuario').then(apelido => {
+      if (apelido) {
+        setNomeUsuario(apelido);
+      } else {
+        AsyncStorage.getItem('nomeUsuario').then(nome => {
+          if (nome) setNomeUsuario(nome);
+        });
+      }
     });
-    
     AsyncStorage.getItem('emailUsuario').then(email => {
       if (email) setEmailUsuario(email);
     });
-  }, []);
+  }, [visible]);
 
   const handleLogout = async () => {
     onClose();
     try {
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('keepConnected');
-      console.log('Logout realizado');
-      // Chamar a função de logout do componente pai
-      if (onLogout) {
-        onLogout();
-      }
+      if (onLogout) onLogout();
     } catch (error) {
       console.error('Erro no logout:', error);
     }
   };
 
+  const handleChangeLanguage = async (code) => {
+    await i18n.changeLanguage(code);
+    await AsyncStorage.setItem('appLanguage', code);
+  };
+
   const toggleSection = (section) => {
-    switch (section) {
-      case 'perfil':
-        setPerfilExpanded(!perfilExpanded);
-        break;
-      case 'config':
-        setConfigExpanded(!configExpanded);
-        break;
-      case 'notificacoes':
-        setNotificacoesExpanded(!notificacoesExpanded);
-        break;
-      case 'idioma':
-        setIdiomaExpanded(!idiomaExpanded);
-        break;
-    }
+    if (section === 'perfil')       setPerfilExpanded(v => !v);
+    if (section === 'config')       setConfigExpanded(v => !v);
+    if (section === 'notificacoes') setNotificacoesExpanded(v => !v);
+    if (section === 'idioma')       setIdiomaExpanded(v => !v);
+  };
+
+  const abrirAlterarApelido = async () => {
+    const atual = await AsyncStorage.getItem('apelidoUsuario');
+    setApelidoInput(atual || '');
+    setApelidoModalVisible(true);
+  };
+
+  // ✅ Avisa o Dashboard quando o apelido muda
+  const salvarApelido = async () => {
+    const apelido = apelidoInput.trim();
+    if (!apelido) return;
+    await AsyncStorage.setItem('apelidoUsuario', apelido);
+    await AsyncStorage.setItem('nomeUsuario', apelido);
+    setNomeUsuario(apelido);
+    setApelidoModalVisible(false);
+    if (onApelidoChange) onApelidoChange(apelido);
+    Alert.alert('✅', 'Apelido atualizado com sucesso!');
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.sidebar}>
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            
+
             {/* Header do Perfil */}
             <View style={styles.profileHeader}>
-              <Image 
-                source={require('../assets/fotoperfil.png')} 
-                style={styles.profileAvatar} 
-              />
+              <Image source={require('../assets/fotoperfil.png')} style={styles.profileAvatar} />
               <Text style={styles.profileName}>{nomeUsuario || 'Usuário'}</Text>
-              <Text style={styles.profileEmail}>{emailUsuario || 'usuario@exemplo.com'}</Text>
+              <Text style={styles.profileEmail}>{emailUsuario || ''}</Text>
             </View>
 
-            {/* Menu Items */}
             <View style={styles.menuContainer}>
-              
-              {/* Perfil Section */}
+
+              {/* Perfil */}
               <View style={styles.menuSection}>
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => toggleSection('perfil')}
-                >
+                <TouchableOpacity style={styles.menuItem} onPress={() => toggleSection('perfil')}>
                   <Ionicons name="person-outline" size={20} color={Colors.text} />
-                  <Text style={styles.menuText}>Perfil</Text>
-                  <Ionicons 
-                    name={perfilExpanded ? "chevron-down" : "chevron-forward"} 
-                    size={16} 
-                    color={Colors.textMuted} 
-                  />
+                  <Text style={styles.menuText}>{t('perfil')}</Text>
+                  <Ionicons name={perfilExpanded ? 'chevron-down' : 'chevron-forward'} size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
-                
                 {perfilExpanded && (
                   <View style={styles.subMenu}>
                     <TouchableOpacity style={styles.subMenuItem}>
-                      <Text style={styles.subMenuText}>Informações Pessoais</Text>
+                      <Text style={styles.subMenuText}>{t('informacoes_pessoais')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.subMenuItem} onPress={abrirAlterarApelido}>
+                      <Text style={styles.subMenuText}>Alterar Apelido</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.subMenuItem}>
-                      <Text style={styles.subMenuText}>Alterar Senha</Text>
+                      <Text style={styles.subMenuText}>{t('alterar_senha')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.subMenuItem}>
-                      <Text style={styles.subMenuText}>Histórico de Atividade</Text>
+                      <Text style={styles.subMenuText}>{t('historico_atividade')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               </View>
 
-              {/* Configurações Section */}
+              {/* Configurações */}
               <View style={styles.menuSection}>
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => toggleSection('config')}
-                >
+                <TouchableOpacity style={styles.menuItem} onPress={() => toggleSection('config')}>
                   <Ionicons name="settings-outline" size={20} color={Colors.text} />
-                  <Text style={styles.menuText}>Configurações</Text>
-                  <Ionicons 
-                    name={configExpanded ? "chevron-down" : "chevron-forward"} 
-                    size={16} 
-                    color={Colors.textMuted} 
-                  />
+                  <Text style={styles.menuText}>{t('configuracoes')}</Text>
+                  <Ionicons name={configExpanded ? 'chevron-down' : 'chevron-forward'} size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              {/* Notificações Section */}
+              {/* Notificações */}
               <View style={styles.menuSection}>
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => toggleSection('notificacoes')}
-                >
+                <TouchableOpacity style={styles.menuItem} onPress={() => toggleSection('notificacoes')}>
                   <Ionicons name="notifications-outline" size={20} color={Colors.text} />
-                  <Text style={styles.menuText}>Notificações</Text>
-                  <Ionicons 
-                    name={notificacoesExpanded ? "chevron-down" : "chevron-forward"} 
-                    size={16} 
-                    color={Colors.textMuted} 
-                  />
+                  <Text style={styles.menuText}>{t('notificacoes')}</Text>
+                  <Ionicons name={notificacoesExpanded ? 'chevron-down' : 'chevron-forward'} size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              {/* Idioma Section */}
+              {/* Idioma */}
               <View style={styles.menuSection}>
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => toggleSection('idioma')}
-                >
+                <TouchableOpacity style={styles.menuItem} onPress={() => toggleSection('idioma')}>
                   <Ionicons name="language-outline" size={20} color={Colors.text} />
-                  <Text style={styles.menuText}>Idioma</Text>
-                  <Ionicons 
-                    name={idiomaExpanded ? "chevron-down" : "chevron-forward"} 
-                    size={16} 
-                    color={Colors.textMuted} 
-                  />
+                  <Text style={styles.menuText}>{t('idioma')}</Text>
+                  <Ionicons name={idiomaExpanded ? 'chevron-down' : 'chevron-forward'} size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
-                
                 {idiomaExpanded && (
                   <View style={styles.subMenu}>
-                    <TouchableOpacity style={styles.subMenuItem}>
-                      <View style={styles.languageItem}>
-                        <Text style={styles.flag}>🇧🇷</Text>
-                        <Text style={styles.subMenuText}>Português</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.subMenuItem}>
-                      <View style={styles.languageItem}>
-                        <Text style={styles.flag}>🇬🇧</Text>
-                        <Text style={styles.subMenuText}>Inglês</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.subMenuItem}>
-                      <View style={styles.languageItem}>
-                        <Text style={styles.flag}>🇪🇸</Text>
-                        <Text style={styles.subMenuText}>Espanhol</Text>
-                      </View>
-                    </TouchableOpacity>
+                    {IDIOMAS.map((idioma) => {
+                      const ativo = i18n.language === idioma.code;
+                      return (
+                        <TouchableOpacity
+                          key={idioma.code}
+                          style={ativo ? styles.subMenuItemActive : styles.subMenuItem}
+                          onPress={() => handleChangeLanguage(idioma.code)}
+                        >
+                          <View style={styles.languageItem}>
+                            <Text style={styles.flag}>{idioma.flag}</Text>
+                            <Text style={ativo ? styles.subMenuTextActive : styles.subMenuText}>{idioma.label}</Text>
+                            {ativo && <Ionicons name="checkmark" size={16} color="#4A90E2" style={{ marginLeft: 'auto' }} />}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
               </View>
 
-              {/* Sobre Section */}
+              {/* Sobre */}
               <View style={styles.menuSection}>
                 <TouchableOpacity style={styles.menuItem}>
                   <Ionicons name="information-circle-outline" size={20} color={Colors.text} />
-                  <Text style={styles.menuText}>Sobre a Secretar.IA</Text>
+                  <Text style={styles.menuText}>{t('sobre')}</Text>
                 </TouchableOpacity>
               </View>
 
             </View>
-
           </ScrollView>
 
-          {/* Botão Sair */}
+          {/* Botão Sair — azul */}
           <View style={styles.logoutContainer}>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <TouchableOpacity style={[styles.logoutButton, { backgroundColor: Colors.primary }]} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={20} color="white" />
-              <Text style={styles.logoutText}>Sair</Text>
+              <Text style={styles.logoutText}>{t('sair')}</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Botão Fechar */}
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={onClose}
-          >
-            <Ionicons name="close" size={20} color={Colors.text} />
+          {/* ✅ Botão Fechar — azul, um pouco mais abaixo */}
+          <TouchableOpacity style={[styles.closeButton, { backgroundColor: Colors.primary }]} onPress={onClose}>
+            <Ionicons name="close" size={20} color="white" />
           </TouchableOpacity>
-
         </View>
       </View>
+
+      {/* Modal Alterar Apelido */}
+      <Modal visible={apelidoModalVisible} transparent animationType="fade">
+        <View style={styles.apelidoOverlay}>
+          <View style={[styles.apelidoCard, { backgroundColor: Colors.surface }]}>
+            <Text style={[styles.apelidoTitle, { color: Colors.text }]}>Alterar Apelido</Text>
+            <Text style={[styles.apelidoSubtitle, { color: Colors.textMuted }]}>Como quer ser chamado?</Text>
+            <TextInput
+              style={[styles.apelidoInput, { backgroundColor: Colors.surfaceLight, color: Colors.text }]}
+              placeholder="Ex: Vinicius, Vini..."
+              placeholderTextColor={Colors.textMuted}
+              value={apelidoInput}
+              onChangeText={setApelidoInput}
+              autoFocus
+              maxLength={30}
+              returnKeyType="done"
+              onSubmitEditing={salvarApelido}
+            />
+            <TouchableOpacity
+              style={[styles.apelidoBtn, { backgroundColor: Colors.primary }, !apelidoInput.trim() && { opacity: 0.4 }]}
+              onPress={salvarApelido}
+              disabled={!apelidoInput.trim()}
+            >
+              <Text style={styles.apelidoBtnText}>Salvar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.apelidoCancelar} onPress={() => setApelidoModalVisible(false)}>
+              <Text style={[styles.apelidoCancelarText, { color: Colors.textMuted }]}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
 
-export default function SimpleSidebar({ visible, onClose, onLogout }) {
-  return <SidebarContent visible={visible} onClose={onClose} onLogout={onLogout} />;
+// ✅ onApelidoChange passado para SidebarContent
+export default function SimpleSidebar({ visible, onClose, onLogout, onApelidoChange }) {
+  return <SidebarContent visible={visible} onClose={onClose} onLogout={onLogout} onApelidoChange={onApelidoChange} />;
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-start', alignItems: 'flex-start' },
+  sidebar: { width: SIDEBAR_WIDTH, height: '100%', backgroundColor: '#f8f9fa', elevation: 10, shadowColor: '#000', shadowOffset: { width: 2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 10 },
+  content: { flex: 1 },
+  profileHeader: { padding: 24, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e9ecef' },
+  profileAvatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 12 },
+  profileName: { fontSize: 20, fontWeight: 'bold', color: '#2c3e50', marginBottom: 4 },
+  profileEmail: { fontSize: 14, color: '#6c757d' },
+  menuContainer: { flex: 1, padding: 16 },
+  menuSection: { marginBottom: 8 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, backgroundColor: '#ffffff', marginBottom: 4 },
+  menuText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#2c3e50', marginLeft: 12 },
+  subMenu: { marginLeft: 32, marginTop: 8 },
+  subMenuItem: { padding: 12, borderRadius: 8, backgroundColor: '#ffffff', marginBottom: 4 },
+  subMenuItemActive: { padding: 12, borderRadius: 8, backgroundColor: '#e8f0fe', marginBottom: 4, borderLeftWidth: 3, borderLeftColor: '#4A90E2' },
+  subMenuText: { fontSize: 14, color: '#6c757d' },
+  subMenuTextActive: { fontSize: 14, color: '#4A90E2', fontWeight: '700' },
+  languageItem: { flexDirection: 'row', alignItems: 'center' },
+  flag: { fontSize: 20, marginRight: 12 },
+  logoutContainer: { padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef' },
+  logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 12 },
+  logoutText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  // ✅ top: 28 (um pouco mais abaixo), azul
+  closeButton: { position: 'absolute', top: 28, right: 16, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
+
+  apelidoOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  apelidoCard: { borderRadius: 24, padding: 24, width: '100%', alignItems: 'center' },
+  apelidoTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 6, textAlign: 'center' },
+  apelidoSubtitle: { fontSize: 13, marginBottom: 20, textAlign: 'center' },
+  apelidoInput: { width: '100%', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, marginBottom: 16, textAlign: 'center' },
+  apelidoBtn: { width: '100%', borderRadius: 14, padding: 14, alignItems: 'center', marginBottom: 8 },
+  apelidoBtnText: { color: 'white', fontSize: 15, fontWeight: '700' },
+  apelidoCancelar: { padding: 10 },
+  apelidoCancelarText: { fontSize: 14 },
+});

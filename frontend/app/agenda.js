@@ -10,11 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../constants/colors';
 import { getEvents, createEvent, deleteEvent } from '../services/api';
-
-const DAYS_HEADER = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const DAYS_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 const { width } = Dimensions.get('window');
 const DAY_SIZE = Math.floor((width - 40) / 7);
@@ -46,14 +43,21 @@ function getWeekRow(cells, selectedDate) {
 
 export default function AgendaScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const dotColors = [Colors.primary, Colors.accent, Colors.success, Colors.warning, Colors.danger];
+
+  // Arrays traduzidos dentro do componente para reagir à troca de idioma
+  const DAYS_HEADER = [t('dom'), t('seg'), t('ter'), t('qua'), t('qui'), t('sex'), t('sab')];
+  const DAYS_FULL   = [t('domingo'), t('segunda'), t('terca'), t('quarta'), t('quinta'), t('sexta'), t('sabado')];
+  const MONTHS      = [t('janeiro'), t('fevereiro'), t('marco'), t('abril'), t('maio'), t('junho'),
+                       t('julho'), t('agosto'), t('setembro'), t('outubro'), t('novembro'), t('dezembro')];
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [expanded, setExpanded] = useState(false); // ✅ controla mês expandido
+  const [expanded, setExpanded] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -77,7 +81,7 @@ export default function AgendaScreen() {
 
   const handleCreate = async () => {
     if (!titulo || !dataInicio) {
-      Alert.alert('Atenção', 'Preencha o título e a data!');
+      Alert.alert(t('atencao'), t('preencha_titulo_data'));
       return;
     }
     setSaving(true);
@@ -90,16 +94,16 @@ export default function AgendaScreen() {
       setTitulo(''); setDescricao(''); setDataInicio('');
       loadEvents();
     } catch {
-      Alert.alert('Erro', 'Não foi possível criar o evento!');
+      Alert.alert(t('erro'), t('erro_criar_evento'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (id) => {
-    Alert.alert('Excluir evento', 'Tem certeza?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: async () => { await deleteEvent(id); loadEvents(); } }
+    Alert.alert(t('excluir_evento'), t('tem_certeza'), [
+      { text: t('cancelar'), style: 'cancel' },
+      { text: t('excluir'), style: 'destructive', onPress: async () => { await deleteEvent(id); loadEvents(); } }
     ]);
   };
 
@@ -127,7 +131,6 @@ export default function AgendaScreen() {
   const formatTime = (dateStr) =>
     new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-  // Semana atual (modo recolhido)
   const weekRow = getWeekRow(cells, selectedDate);
 
   const styles = StyleSheet.create({
@@ -177,7 +180,6 @@ export default function AgendaScreen() {
       width: 5, height: 5, borderRadius: 3,
       backgroundColor: Colors.primary, position: 'absolute', bottom: 3,
     },
-    // Botão expandir/recolher
     expandBtn: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
       paddingVertical: 6, gap: 4,
@@ -289,7 +291,6 @@ export default function AgendaScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={prevMonth} style={styles.navArrow}>
@@ -310,7 +311,6 @@ export default function AgendaScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.calendarContainer}>
-          {/* Cabeçalho dias da semana */}
           <View style={styles.weekHeader}>
             {DAYS_HEADER.map((d, i) => (
               <Text key={i} style={[
@@ -322,28 +322,20 @@ export default function AgendaScreen() {
               </Text>
             ))}
           </View>
-
-          {/* Grade: semana ou mês completo */}
           <View style={styles.daysGrid}>
             {(expanded ? cells : weekRow).map((cell, i) => renderDayCell(cell, i))}
           </View>
         </View>
 
-        {/* Botão expandir/recolher */}
         <TouchableOpacity style={styles.expandBtn} onPress={() => setExpanded(e => !e)}>
           <Text style={styles.expandBtnText}>
-            {expanded ? 'Recolher calendário' : 'Ver mês completo'}
+            {expanded ? t('recolher_calendario') : t('ver_mes_completo')}
           </Text>
-          <Ionicons
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={14}
-            color={Colors.textMuted}
-          />
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
         </TouchableOpacity>
 
         <View style={styles.divider} />
 
-        {/* Eventos do dia */}
         <View style={styles.eventsSection}>
           <View style={styles.eventsDayHeader}>
             <View style={styles.eventsDayLeft}>
@@ -354,7 +346,7 @@ export default function AgendaScreen() {
               </View>
             </View>
             <Text style={styles.eventsCount}>
-              {dayEvents.length} {dayEvents.length === 1 ? 'evento' : 'eventos'}
+              {dayEvents.length} {dayEvents.length === 1 ? t('evento') : t('eventos')}
             </Text>
           </View>
 
@@ -363,8 +355,8 @@ export default function AgendaScreen() {
           ) : dayEvents.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="calendar-outline" size={32} color={Colors.textMuted} style={{ opacity: 0.4 }} />
-              <Text style={styles.emptyText}>Nenhum evento</Text>
-              <Text style={styles.emptySubtext}>Use o microfone para criar compromissos</Text>
+              <Text style={styles.emptyText}>{t('nenhum_evento')}</Text>
+              <Text style={styles.emptySubtext}>{t('use_microfone')}</Text>
             </View>
           ) : (
             dayEvents.map((evt, i) => (
@@ -390,10 +382,9 @@ export default function AgendaScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Modal criar evento */}
       <Modal visible={modalVisible} transparent animationType="slide">
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -401,29 +392,29 @@ export default function AgendaScreen() {
               <View style={styles.modalCard}>
                 <View style={styles.modalHandle} />
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Novo evento</Text>
+                  <Text style={styles.modalTitle}>{t('novo_evento')}</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                     <Ionicons name="close" size={20} color={Colors.textMuted} />
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.label}>Título *</Text>
+                <Text style={styles.label}>{t('titulo')} *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ex: Reunião com equipe"
+                  placeholder={t('placeholder_titulo')}
                   placeholderTextColor={Colors.textMuted}
                   value={titulo}
                   onChangeText={setTitulo}
                 />
-                <Text style={styles.label}>Descrição</Text>
+                <Text style={styles.label}>{t('descricao')}</Text>
                 <TextInput
                   style={[styles.input, styles.inputMultiline]}
-                  placeholder="Detalhes do evento..."
+                  placeholder={t('placeholder_descricao')}
                   placeholderTextColor={Colors.textMuted}
                   value={descricao}
                   onChangeText={setDescricao}
                   multiline
                 />
-                <Text style={styles.label}>Data e hora * (AAAA-MM-DD HH:MM)</Text>
+                <Text style={styles.label}>{t('data_hora')} * (AAAA-MM-DD HH:MM)</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Ex: 2026-03-25 14:00"
@@ -432,7 +423,10 @@ export default function AgendaScreen() {
                   onChangeText={setDataInicio}
                 />
                 <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={saving}>
-                  {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Salvar evento</Text>}
+                  {saving
+                    ? <ActivityIndicator color={Colors.white} />
+                    : <Text style={styles.saveBtnText}>{t('salvar_evento')}</Text>
+                  }
                 </TouchableOpacity>
               </View>
             </View>
