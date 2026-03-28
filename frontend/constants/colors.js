@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 const light = {
   background: '#F4F7FB',
@@ -39,8 +39,8 @@ const dark = {
 };
 
 export function useColors() {
-  // APP SEMPRE EM MODO CLARO - FIXO
-  return light;
+  const { colors } = useTheme();
+  return colors;
 }
 
 export { light, dark };

@@ -116,7 +116,7 @@ export default function DashboardScreen({ onLogout }) {
     greetingContainer: { flex: 1, marginRight: 8 },
     greeting: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
     subGreeting: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
-    avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 12 },
+    avatar: { width: 35, height: 35, borderRadius: 20, marginRight: 10 },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
     statCard: { flex: 1, minWidth: '45%', backgroundColor: Colors.surface, borderRadius: 20, padding: 16, shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 3 },
     statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },

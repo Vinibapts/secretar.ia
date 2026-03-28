@@ -24,13 +24,10 @@
 - [🏗️ Arquitetura](#️-arquitetura)
 - [🚀 Tecnologias](#-tecnologias)
 - [📱 Instalação](#-instalação)
-- [💻 Uso](#-uso)
-- [🤖 Sistema de IA](#-sistema-de-ia)
-- [🎯 Agentes Especializados](#-agentes-especializados)
-- [📊 Performance](#-performance)
-- [🔧 Contribuição](#-contribuição)
-- [� Warm-up do Projeto](#-warm-up-do-projeto)
-- [� Licença](#-licença)
+- [� Estrutura do Projeto](#-estrutura-do-projeto)
+- [� Internacionalização](#-internacionalização)
+- [🔧 Configurações](#-configurações)
+- [📄 Licença](#-licença)
 
 ---
 
@@ -57,6 +54,7 @@ Transformar a forma como as pessoas gerenciam seu tempo, finanças e hábitos at
 - ✅ Sugestões de horários alternativos
 - ✅ Sincronização offline-first
 - ✅ Notificações inteligentes
+- ✅ **Sidebar de perfil** com acesso rápido
 
 ### 💰 **Gestão Financeira**
 - ✅ Registro por voz: "Gastei 50 reais com Uber"
@@ -64,6 +62,7 @@ Transformar a forma como as pessoas gerenciam seu tempo, finanças e hábitos at
 - ✅ Análise de padrões de gastos
 - ✅ Metas e orçamentos inteligentes
 - ✅ Relatórios visuais
+- ✅ **KPIs em tempo real** no dashboard
 
 ### 🎯 **Hábitos e Metas**
 - ✅ Registro por voz: "Corri 30 minutos hoje"
@@ -85,6 +84,7 @@ Transformar a forma como as pessoas gerenciam seu tempo, finanças e hábitos at
 - ✅ Feedback de voz
 - ✅ Compreensão contextual
 - ✅ Respostas em tempo real
+- ✅ **Botão de voz centralizado** na navegação
 
 ### 🔐 **Autenticação**
 - ✅ Login seguro com JWT
@@ -101,35 +101,47 @@ Transformar a forma como as pessoas gerenciam seu tempo, finanças e hábitos at
 - ✅ Respostas contextualizadas
 
 ### 🎨 **Experiência Mobile**
-- ✅ **Tema Claro Fixo** - Interface sempre em modo claro para melhor usabilidade
+- ✅ **Tema Claro Fixo** - Interface sempre em modo claro
 - ✅ Interface adaptativa e responsiva
 - ✅ Performance otimizada (<100ms queries)
 - ✅ Offline-first
 - ✅ Design limpo e moderno
+- ✅ **Notícias do dia** integradas
+- ✅ **Acesso rápido** para principais funcionalidades
 
 ---
 
 ## 🏗️ Arquitetura
 
-### 📱 **Frontend (React Native)**
+### 📱 **Frontend (React Native + Expo)**
 ```
 frontend/
-├── app/
-│   ├── dashboard.js      # Painel principal
-│   ├── agenda.js         # Gestão de eventos
-│   ├── finances.js       # Gestão financeira
-│   ├── habits.js         # Registro de hábitos
-│   ├── ranking.js        # Sistema de ranking
-│   ├── tasks.js          # Gestão de tarefas
-│   ├── voice.js          # Interface de voz
-│   ├── login.js          # Autenticação
-│   └── chat.js           # Interface com IA
-├── constants/
-│   ├── colors.js         # Sistema de temas
-│   └── theme.js          # Gerenciamento de temas
-├── services/
-│   └── api.js            # Comunicação com backend
-└── components/           # Componentes reutilizáveis
+├── app/                    # Telas principais
+│   ├── dashboard.js         # Painel principal com KPIs
+│   ├── agenda.js            # Gestão de eventos
+│   ├── finances.js          # Gestão financeira
+│   ├── habits.js            # Registro de hábitos
+│   ├── ranking.js           # Sistema de ranking
+│   ├── tasks.js            # Gestão de tarefas
+│   ├── voice.js            # Interface de voz
+│   ├── login.js            # Autenticação
+│   └── chat.js             # Interface com IA
+├── components/             # Componentes reutilizáveis
+│   ├── SimpleSidebar.js     # Sidebar de perfil
+│   └── AnimatedNewsSection.js # Notícias animadas
+├── constants/             # Cores e temas
+│   ├── colors.js           # Sistema de temas
+│   └── theme.js            # Gerenciamento de temas
+├── services/              # Comunicação com backend
+│   └── api.js             # API service
+├── i18n/                 # Internacionalização
+│   └── index.js           # Configuração i18next
+├── locales/               # Traduções
+│   ├── pt.json            # Português
+│   ├── en.json            # Inglês
+│   └── es.json            # Espanhol
+└── assets/               # Recursos estáticos
+    └── fotoperfil.png     # Imagem de perfil
 ```
 
 ### 🚀 **Backend (FastAPI)**
@@ -573,7 +585,101 @@ O Secretar.IA conta com 8 agentes enterprise especializados:
 
 ---
 
-## 🔧 Contribuição
+## � Estrutura do Projeto
+
+### 📂 **Organização de Arquivos**
+
+```
+Secretar.ia/
+├── README.md                 # Documentação completa
+├── .env                      # Variáveis de ambiente
+├── .gitignore               # Ignorar arquivos Git
+├── backend/                  # API FastAPI
+│   ├── main.py              # Aplicação principal
+│   ├── requirements.txt      # Dependências Python
+│   ├── routers/             # Endpoints
+│   ├── database/            # Models e DB
+│   ├── ai/                 # Sistema de IA
+│   └── schemas/            # Validação
+├── frontend/                 # App React Native
+│   ├── App.js              # Componente principal
+│   ├── package.json         # Dependências Node
+│   ├── app/                # Telas
+│   ├── components/          # Componentes reutilizáveis
+│   ├── constants/          # Temas e cores
+│   ├── services/           # API services
+│   ├── i18n/              # Internacionalização
+│   ├── locales/            # Traduções
+│   └── assets/            # Imagens e recursos
+├── engineer/                # Workflows de desenvolvimento
+└── fotoperfil.png          # Imagem de perfil padrão
+```
+
+---
+
+## 🌐 Internacionalização
+
+### 🗣️ **Idiomas Suportados**
+
+O app suporta 3 idiomas com tradução completa:
+
+- **🇧🇷 Português (PT-BR)** - Idioma principal
+- **🇬🇧 Inglês (EN)** - Suporte internacional
+- **🇪🇸 Espanhol (ES)** - Mercado Latino-Americano
+
+### 🔧 **Configuração i18next**
+
+```javascript
+// i18n/index.js
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+i18n.use(initReactI18next).init({
+  compatibilityJSON: 'v3',
+  lng: 'pt',
+  fallbackLng: 'pt',
+  resources: {
+    pt: { translation: pt },
+    en: { translation: en },
+    es: { translation: es },
+  },
+  interpolation: { escapeValue: false },
+});
+```
+
+### 📝 **Arquivos de Tradução**
+
+```json
+// locales/pt.json
+{
+  "bomdia": "Bom dia",
+  "painel": "Aqui está o seu painel",
+  "eventos": "Eventos hoje",
+  "saldo": "Saldo do mês",
+  "receitas": "Receitas",
+  "gastos": "Gastos",
+  "acesso_rapido": "Acesso rápido",
+  "agenda": "Agenda",
+  "financas": "Finanças",
+  "ranking": "Ranking",
+  "noticias": "Notícias do Dia"
+}
+```
+
+### 🎯 **Uso no Código**
+
+```javascript
+import { useTranslation } from 'react-i18next';
+
+const { t } = useTranslation();
+
+<Text>{t('bomdia')}, {nome}!</Text>
+<Text>{t('painel')}</Text>
+```
+
+---
+
+## �🔧 Contribuição
 
 ### 🤝 **Como Contribuir**
 

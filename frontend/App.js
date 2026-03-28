@@ -3,13 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { View, Modal, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioRecorder, AudioModule, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import * as Speech from 'expo-speech';
 import { useColors } from './constants/colors';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import LoginScreen from './app/login';
 import DashboardScreen from './app/dashboard';
 import AgendaScreen from './app/agenda';
@@ -20,7 +20,7 @@ import { transcribeAudio } from './services/api';
 const Tab = createBottomTabNavigator();
 
 function VoiceModal({ visible, onClose }) {
-  const Colors = useColors(); // ✅ hook aqui dentro
+  const Colors = useColors();
   const [status, setStatus] = useState('idle');
   const [response, setResponse] = useState('');
   const [voiceId, setVoiceId] = useState(null);
@@ -43,7 +43,6 @@ function VoiceModal({ visible, onClose }) {
         if (encontrada) { voiceEscolhida = id; break; }
       }
       if (!voiceEscolhida && ptVoices.length > 0) voiceEscolhida = ptVoices[0].identifier;
-      console.log('Voz escolhida:', voiceEscolhida);
       setVoiceId(voiceEscolhida);
     });
   }, []);
@@ -155,30 +154,14 @@ function VoiceModal({ visible, onClose }) {
       alignItems: 'center', gap: 16,
     },
     handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, marginBottom: 8 },
-    aiIcon: {
-      width: 48, height: 48, borderRadius: 16,
-      backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center',
-    },
+    aiIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
     aiTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
     pulseRing: { width: 190, height: 190, borderRadius: 95, alignItems: 'center', justifyContent: 'center', marginVertical: 8 },
     outerRing: { width: 168, height: 168, borderRadius: 84, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
     middleRing: { width: 142, height: 142, borderRadius: 71, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    micButton: {
-      width: 116, height: 116, borderRadius: 58,
-      alignItems: 'center', justifyContent: 'center',
-      shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20,
-      elevation: 18, overflow: 'hidden',
-    },
-    micButtonShine: {
-      position: 'absolute', top: 8, left: 12,
-      width: 92, height: 48, borderRadius: 48,
-      backgroundColor: 'rgba(255,255,255,0.25)',
-    },
-    micButtonDepth: {
-      position: 'absolute', bottom: 0, left: 0, right: 0, height: 30,
-      borderBottomLeftRadius: 58, borderBottomRightRadius: 58,
-      backgroundColor: 'rgba(0,0,0,0.12)',
-    },
+    micButton: { width: 116, height: 116, borderRadius: 58, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 18, overflow: 'hidden' },
+    micButtonShine: { position: 'absolute', top: 8, left: 12, width: 92, height: 48, borderRadius: 48, backgroundColor: 'rgba(255,255,255,0.25)' },
+    micButtonDepth: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 30, borderBottomLeftRadius: 58, borderBottomRightRadius: 58, backgroundColor: 'rgba(0,0,0,0.12)' },
     statusLabel: { fontSize: 15, fontWeight: '600', color: Colors.textMuted },
     responseBox: { backgroundColor: Colors.surfaceLight, borderRadius: 16, padding: 16, width: '100%' },
     responseText: { fontSize: 15, color: Colors.text, lineHeight: 22, textAlign: 'center' },
@@ -197,10 +180,7 @@ function VoiceModal({ visible, onClose }) {
           <Text style={modalStyles.aiTitle}>
             Secretar<Text style={{ color: Colors.primary }}>.IA</Text>
           </Text>
-          <Animated.View style={[
-            modalStyles.pulseRing,
-            { backgroundColor: color + '12', transform: [{ scale: pulseAnim }] }
-          ]}>
+          <Animated.View style={[modalStyles.pulseRing, { backgroundColor: color + '12', transform: [{ scale: pulseAnim }] }]}>
             <View style={[modalStyles.outerRing, { borderColor: color + '35' }]}>
               <View style={[modalStyles.middleRing, { borderColor: color + '60' }]}>
                 <TouchableOpacity
@@ -238,8 +218,7 @@ function VoiceModal({ visible, onClose }) {
 }
 
 function MainTabs({ onVoicePress, onLogout }) {
-  const Colors = useColors(); // ✅ hook aqui dentro
-  const scheme = useColorScheme();
+  const Colors = useColors();
 
   return (
     <Tab.Navigator
@@ -310,8 +289,9 @@ function MainTabs({ onVoicePress, onLogout }) {
   );
 }
 
-export default function App() {
-  const scheme = useColorScheme();
+// ✅ App interno que usa os hooks (precisa estar dentro do ThemeProvider)
+function AppContent() {
+  const { isDark } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -340,13 +320,13 @@ export default function App() {
 
   return (
     <>
-      {/* ✅ StatusBar muda automaticamente com o tema */}
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      {/* ✅ StatusBar muda com o tema */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       {isLoggedIn ? (
         <NavigationContainer>
-          <MainTabs 
-            onVoicePress={() => setVoiceVisible(true)} 
-            onLogout={() => setIsLoggedIn(false)} 
+          <MainTabs
+            onVoicePress={() => setVoiceVisible(true)}
+            onLogout={() => setIsLoggedIn(false)}
           />
           <VoiceModal
             visible={voiceVisible}
@@ -357,5 +337,14 @@ export default function App() {
         <LoginScreen onLogin={() => setIsLoggedIn(true)} />
       )}
     </>
+  );
+}
+
+// ✅ ThemeProvider envolve TUDO — todas as telas recebem o tema global
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

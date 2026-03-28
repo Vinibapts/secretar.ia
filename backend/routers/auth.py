@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.models import User
 from schemas.schemas import UserCreate, UserLogin, Token
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
@@ -53,3 +53,37 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     token = criar_token({"sub": str(db_user.id), "email": db_user.email})
     return {"access_token": token, "token_type": "bearer"}
+
+@router.put("/change-password")
+def change_password(
+    data: dict,
+    authorization: str = Header(...),
+    db: Session = Depends(get_db)
+):
+    # Extrai e valida o token
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub"))
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    # Busca o usuário
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    # Verifica senha atual
+    if not verificar_senha(data.get("senha_atual", ""), user.senha_hash):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+
+    # Valida nova senha
+    nova_senha = data.get("nova_senha", "")
+    if len(nova_senha) < 6:
+        raise HTTPException(status_code=400, detail="A nova senha deve ter pelo menos 6 caracteres")
+
+    # Atualiza
+    user.senha_hash = hash_senha(nova_senha)
+    db.commit()
+
+    return {"mensagem": "Senha alterada com sucesso"}
